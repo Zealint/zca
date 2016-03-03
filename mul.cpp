@@ -1,15 +1,20 @@
 /*
 **  Здесь реализованы функции умножения векторов.
 **  Данный файл является вспомогательным для Int.cpp и включается в него.
-** ? В начале файла описаны три прототипа для реализации на ассемблере, 
-** ? а затем разные реализации функций на Си
-** ? выполнены в нескольких пространствах имён ниже.
 */
 
 namespace MulAsm {
-  
+
+  /**
+   * Умножение вектора u размером size на лимб v.
+   * Результат в z. Память выделена заранее.
+   * Вернуть перенос в старший лимб.
+   */  
   limb_t __fastcall mul_N_by_1 ( limb_t * z, const limb_t * u, size_t size, limb_t v );
   
+  /**
+   * То же, но "на месте".
+   */
   limb_t __fastcall mul_N_by_1 ( limb_t * u, size_t size, limb_t v );
 
 };
@@ -17,6 +22,10 @@ namespace MulAsm {
 
 namespace Mul0 {
 
+  /**
+   * Перемножить два лимба u и v по технологии LoHi.
+   * Результат в двух лимбах (h, l).
+   */
   void mul_limbs ( limb_t & h, limb_t & l, limb_t u, limb_t v ) {
     limb_t u0, v0, u1, v1, w0, w1, w2, w3;
     const limb_t HALF_LIMB_BITS = LIMB_BITS / 2;
@@ -42,6 +51,7 @@ namespace Mul0 {
     for ( size_t i = 0; i < size; i ++ ) {
       mul_limbs ( h, l, u [ i ], v );
       z [ i ] = l + s;
+      // Сложить старшую половину и перенос при сложении.
       s = h + ( ( ( l & s ) | ( ( l | s ) & ( ~ z [ i ] ) ) ) >> ( LIMB_BITS - 1 ) );
     }
     return s;
@@ -84,17 +94,23 @@ namespace Mul1 {
 
 using namespace Mul0;
 
-// size>0, v > 0
-
+/**
+ * Умножение вектора на либм z = u * v.
+ * Возвращает корректный размер результата при v > 0.
+ * Память в z выделена заранее.
+ */
 static size_t mul1 ( limb_t * z, const limb_t * u, size_t size, limb_t v ) {
   limb_t carry = mul_N_by_1 ( z, u, size, v );
   if ( carry ) z [ size ++ ] = carry;
   return size;
 }
 
+/**
+ * То же, но "на месте".
+ * Память для возможного переноса в u выделена заранее.
+ */
 static size_t mul1 ( limb_t * u, size_t size, limb_t v ) {
   limb_t carry = mul_N_by_1 ( u, size, v );
   if ( carry ) u [ size ++ ] = carry;
   return size;
 }
-
