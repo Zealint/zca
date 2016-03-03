@@ -18,23 +18,23 @@ namespace MulAsm {
 namespace Mul0 {
 
   void mul_limbs ( limb_t & h, limb_t & l, limb_t u, limb_t v ) {
-    limb_t u0, v0;
-    limb_t u1, v1, w0, w1, w2, w3, t;
+    limb_t u0, v0, u1, v1, w0, w1, w2, w3;
     const limb_t HALF_LIMB_BITS = LIMB_BITS / 2;
-    const limb_t L_HALF_FF = LIMB_T_MAX >> HALF_LIMB_BITS;    
-    u0 = u & L_HALF_FF;
+    const limb_t L_HALF_MASK = LIMB_T_MAX >> HALF_LIMB_BITS;    
+    u0 = u & L_HALF_MASK;
     u1 = u >> HALF_LIMB_BITS;
-    v0 = v & L_HALF_FF;
+    v0 = v & L_HALF_MASK;
     v1 = v >> HALF_LIMB_BITS;
     w0 = u0 * v0;
     w1 = u1 * v0;
     w2 = u0 * v1;
     w3 = u1 * v1;
     l = w0 + ( ( w1 + w2 ) << HALF_LIMB_BITS );
-    t = w1 + ( w0 >> HALF_LIMB_BITS );
-    w2 += ( t & L_HALF_FF );
-    t >>= HALF_LIMB_BITS;    
-    h = w3 + t + ( w2 >> HALF_LIMB_BITS );    
+    w1 += ( w0 >> HALF_LIMB_BITS );
+    w2 += ( w1 & L_HALF_MASK );
+    w1 >>= HALF_LIMB_BITS;
+    w2 >>= HALF_LIMB_BITS;
+    h = w1 + w2 + w3;
   }
   
   limb_t __fastcall mul_N_by_1 ( limb_t * z, const limb_t * u, size_t size, limb_t v ) {  
@@ -82,7 +82,7 @@ namespace Mul1 {
 
 };
 
-using namespace MulAsm;
+using namespace Mul0;
 
 // size>0, v > 0
 

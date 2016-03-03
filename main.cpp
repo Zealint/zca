@@ -6,7 +6,7 @@
 #include "mini-gmp.h"
 #include "Int.cpp"
 
-//#define DEBUG
+#define DEBUG
 
 const size_t N = 1024*1024;
 const size_t T = 1024*1;
