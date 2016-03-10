@@ -198,6 +198,28 @@ class vec_t {
       this -> mul1 ( v );
       return * this;
     }
+
+    /**
+     * Прибавить вектор, умноженный на лимб
+     * Необходимая память должна быть выделена заранее.
+     */
+    size_t addmul ( const vec_t & u, limb_t v ) {
+      if ( u . size == 0 || v == 0 ) return size;
+      // Вызывается функция из файла mul.cpp 
+      return size = :: addmul ( limbs, size, u . limbs, u . size, v );
+    }
+
+    /**
+     * Отнять вектор, умноженный на лимб
+     * Необходимая память должна быть выделена заранее.
+     * Уменьшаемое должно быть не меньше вычитаемого.
+     */
+    size_t submul ( const vec_t & u, limb_t v ) {
+      if ( u . size == 0 || v == 0 ) return size;
+      // Вызывается функция из файла mul.cpp 
+      :: submul ( limbs, size, u . limbs, u . size, v );
+      return Normalize ( );
+    }
     
     /**
      * Внешние операторы
@@ -300,6 +322,42 @@ static void mul1 ( vec_t & z, const vec_t & u, limb_t v ) {
   else 
     // Вызывается функция из файла mul.cpp  
     z . size = mul1 ( z . limbs, u . limbs, u . size, v );
+}
+
+/**
+ * Прибавить к вектору другой вектор, умноженный на лимб.
+ * Память в 'z' должна быть выделена заранее в достаточном объёме.
+ */
+static void addmul ( vec_t & z, const vec_t & u, const vec_t & v, limb_t w ) {
+  if ( v . size == 0 || w == 0 ) {
+    if ( z . limbs == u . limbs ) return;
+    z = u; // Копирование без выделения памяти.
+  }
+  else {
+    if ( z . limbs == u . limbs ) 
+      z . size = :: addmul ( z . limbs, u . size, v . limbs, v . size, w );    
+    else 
+      z . size = :: addmul ( z . limbs, u . limbs, u . size, v . limbs, v . size, w );
+  }
+}
+
+/**
+ * Отнять от вектора другой вектор, умноженный на лимб.
+ * Память в 'z' должна быть выделена заранее в достаточном объёме.
+ */
+static void submul ( vec_t & z, const vec_t & u, const vec_t & v, limb_t w ) {
+  if ( v . size == 0 || w == 0 ) {
+    if ( z . limbs == u . limbs ) return;
+    z = u; // Копирование без выделения памяти.
+  }
+  else {    
+    if ( z . limbs == u . limbs )
+      :: submul ( z . limbs, u . size, v . limbs, v . size, w );
+    else
+      :: submul ( z . limbs, u . limbs, u . size, v . limbs, v . size, w );
+    z . size = u . size;
+    z . Normalize ( );
+  }
 }
 
 /**

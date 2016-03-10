@@ -5,15 +5,19 @@
 
 [ BITS 32 ]
 
-global ?mul_N_by_1@MulAsm@@YIIPAIPBIII@Z
-global ?mul_N_by_1@MulAsm@@YIIPAIII@Z
+global ?mul_N_by_1@MulAsm@@YIIPAIPBIIII@Z
+global ?mul_N_by_1@MulAsm@@YIIPAIII@Z       
+global ?addmul_N_by_1@MulAsm@@YIIPAIPBI1II@Z
+global ?addmul_N_by_1@MulAsm@@YIIPAIPBIII@Z
+global ?submul_N_by_1@MulAsm@@YIIPAIPBI1II@Z
+global ?submul_N_by_1@MulAsm@@YIIPAIPBIII@Z
 
 section .code
 
-  ; Умножение вектора на лимба
-  ; limb_t __fastcall mul_N_by_1 ( limb_t * z, const limb_t * u, size_t size, limb_t v );
-  ;    eax                                ecx               edx      [esp+4]   [esp+8]
-?mul_N_by_1@MulAsm@@YIIPAIPBIII@Z:
+  ; Умножение вектора на лимб с прибавлением лимба
+  ; limb_t __fastcall mul_N_by_1 ( limb_t * z, const limb_t * u, size_t size, limb_t v, limb_t c );
+  ;    eax                                ecx               edx      [esp+4]   [esp+8]  [esp+12]
+?mul_N_by_1@MulAsm@@YIIPAIPBIIII@Z:
   push esi
   push edi
   push ebx
@@ -29,7 +33,8 @@ section .code
 
   shr ecx, 3                ; Развернём цикл 8 раз
   mov [ esp + 8 + 12 ], ecx ; Временно сохраним здесь число итераций
-  xor eax, eax              ; Нужен ноль, а заодно сброс флага переноса
+  mov eax, [ esp + 12 + 12 ]; Добавляемый лимб c.
+  clc 
   test ecx, ecx             ; Если ноль итераций
   jz .end8
     
@@ -116,11 +121,11 @@ section .code
   pop edi
   pop esi
 
-  ret 8
+  ret 12
 
-  ; Умножение вектора на лимб на месте
-  ; limb_t __fastcall mul_N_by_1 ( limb_t * u, size_t size, limb_t v );
-  ;    eax                                ecx          edx   [esp+4]
+  ; Умножение вектора на лимб с прибавлением лимба на месте.
+  ; limb_t __fastcall mul_N_by_1 ( limb_t * u, size_t size, limb_t v, limb_t c );
+  ;    eax                                ecx          edx   [esp+4]   [esp+8]
 ?mul_N_by_1@MulAsm@@YIIPAIII@Z:
   push esi
   push edi
@@ -132,7 +137,7 @@ section .code
   mov ecx, edx              ; ecx = size
   mov edi, [ esp + 4 + 12 ] ; edi = v
 
-  xor ebx, ebx
+  mov ebx, [ esp + 8 + 12 ] ; Добавляемый лимб c
 
   jecxz .end
 
@@ -158,4 +163,166 @@ section .code
   pop edi
   pop esi
 
-  ret 4
+  ret 8
+
+
+  ; Умножение вектора на лимб с прибавлением к вектору.
+  ; limb_t __fastcall addmul_N_by_1 ( limb_t * z, const limb_t * u, const limb_t * v, size_t size, limb_t w );
+  ;    eax                                   ecx               edx           [esp+4]      [esp+8]  [esp+12]
+?addmul_N_by_1@MulAsm@@YIIPAIPBI1II@Z:
+  push esi
+  push edi
+  push ebx
+
+  mov edi, ecx              ; edi = z
+  mov esi, edx              ; esi = u
+  mov ecx, [ esp + 4 + 12 ] ; ecx = v
+  sub esi, ecx
+  sub edi, ecx
+  xor ebx, ebx
+
+  cmp dword [ esp + 8 + 12 ], 0
+  je .end
+  
+.loop:  
+  mov eax, [ ecx ]             ; v[i]
+  mul dword [ esp + 12 + 12 ]  ; v[i]*w
+  add eax, ebx                 ; s+=v[i]*w
+  adc edx, 0
+  add eax, dword [ ecx + esi ] ; s+=u[i]
+  adc edx, 0
+  mov [ ecx + edi ], eax       ; z[i]=low(s)
+  mov ebx, edx                 ; s >>= 32
+  lea ecx, [ ecx + 4 ]
+  dec dword [ esp + 8 + 12 ]
+  jnz .loop
+
+.end: 
+
+  mov eax, ebx
+
+  pop ebx
+  pop edi
+  pop esi
+
+  ret 12
+
+  ; Умножение вектора на лимб с прибавлением к вектору (на месте).
+  ; limb_t __fastcall addmul_N_by_1 ( limb_t * u, const limb_t * v, size_t size, limb_t w );
+  ;    eax                                   ecx               edx      [esp+4]   [esp+8]
+?addmul_N_by_1@MulAsm@@YIIPAIPBIII@Z:
+  push esi
+  push edi
+  push ebx
+
+  mov edi, ecx              ; edi = u
+  mov esi, edx              ; esi = v
+  mov ecx, [ esp + 8 + 12 ] ; ecx = w
+  sub edi, esi
+  xor ebx, ebx
+
+  cmp dword [ esp + 4 + 12 ], 0
+  je .end
+  
+.loop:  
+  mov eax, [ esi ]
+  mul ecx
+  add eax, ebx                 
+  adc edx, 0
+  add dword [ edi + esi ], eax
+  adc edx, 0
+  mov ebx, edx                 
+  lea esi, [ esi + 4 ]
+  dec dword [ esp + 4 + 12 ]
+  jnz .loop
+
+.end: 
+
+  mov eax, ebx
+
+  pop ebx
+  pop edi
+  pop esi
+
+  ret 8
+
+  ; Умножение вектора на лимб с вычитанием из вектора.
+  ; limb_t __fastcall submul_N_by_1 ( limb_t * z, const limb_t * u, const limb_t * v, size_t size, limb_t w );
+  ;    eax                                   ecx               edx           [esp+4]      [esp+8]  [esp+12]
+?submul_N_by_1@MulAsm@@YIIPAIPBI1II@Z:
+  push esi
+  push edi
+  push ebx
+
+  mov edi, ecx              ; edi = z
+  mov esi, edx              ; esi = u
+  mov ecx, [ esp + 4 + 12 ] ; ecx = v
+  sub esi, ecx
+  sub edi, ecx
+  xor ebx, ebx
+
+  cmp dword [ esp + 8 + 12 ], 0
+  je .end
+  
+.loop:  
+  mov eax, [ ecx ]             ; v[i]
+  mul dword [ esp + 12 + 12 ]  ; v[i]*w
+  add eax, ebx                 ; s+=v[i]*w
+  adc edx, 0
+  mov ebx, dword [ ecx + esi ] ; t=u[i]
+  sub ebx, eax                 ; t-=s
+  adc edx, 0                   ; s = (s>>32) + заём от прошлого вычитания
+  mov [ ecx + edi ], ebx       ; z[i]=low(t)
+  mov ebx, edx                 
+  lea ecx, [ ecx + 4 ]
+  dec dword [ esp + 8 + 12 ]
+  jnz .loop
+
+.end: 
+
+  mov eax, ebx
+
+  pop ebx
+  pop edi
+  pop esi
+
+  ret 12
+
+  ; Умножение вектора на лимб с вычитанием из вектора (на месте).
+  ; limb_t __fastcall submul_N_by_1 ( limb_t * u, const limb_t * v, size_t size, limb_t w );
+  ;    eax                                   ecx               edx      [esp+4]   [esp+8]
+?submul_N_by_1@MulAsm@@YIIPAIPBIII@Z:
+  push esi
+  push edi
+  push ebx
+
+  mov edi, ecx              ; edi = u
+  mov esi, edx              ; esi = v
+  mov ecx, [ esp + 8 + 12 ] ; ecx = w
+  sub edi, esi
+  xor ebx, ebx
+
+  cmp dword [ esp + 4 + 12 ], 0
+  je .end
+  
+.loop:  
+  mov eax, [ esi ]
+  mul ecx
+  add eax, ebx                 
+  adc edx, 0  
+  sub dword [ edi + esi ], eax
+  adc edx, 0
+  mov ebx, edx                 
+  lea esi, [ esi + 4 ]
+  dec dword [ esp + 4 + 12 ]
+  jnz .loop
+
+.end: 
+
+  mov eax, ebx
+
+  pop ebx
+  pop edi
+  pop esi
+
+  ret 8
