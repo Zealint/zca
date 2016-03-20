@@ -200,6 +200,27 @@ class vec_t {
     }
 
     /**
+     * Умножить на вектор
+     * Необходимая память должна быть выделена заранее.
+     */
+    size_t mul ( const vec_t & v ) {
+      if ( size == 0 || v . size == 0 ) return size = 0;
+      if ( v . size == 1 ) return mul1 ( v [ 0 ] );
+      vec_t w ( * this );
+      // Вызывается функция из файла mul.cpp
+      return size = :: mul ( limbs, w . limbs, w . size, v . limbs, v . size );
+    }
+
+    /**
+     * Умножить на вектор
+     * Обёртка для mul1 (выше).
+     */
+    const vec_t & operator *= ( const vec_t & v ) {      
+      this -> mul ( v );
+      return * this;
+    }
+
+    /**
      * Прибавить вектор, умноженный на лимб
      * Необходимая память должна быть выделена заранее.
      */
@@ -233,6 +254,7 @@ class vec_t {
 
     friend vec_t operator + ( const vec_t &, const vec_t & );
     friend vec_t operator - ( const vec_t &, const vec_t & );
+    friend vec_t operator * ( const vec_t &, const vec_t & );
 
 };
 
@@ -367,6 +389,31 @@ static void submul ( vec_t & z, const vec_t & u, const vec_t & v, limb_t w ) {
 vec_t operator * ( const vec_t & u, limb_t v ) {  
   vec_t z ( u . size + 1 );
   mul1 ( z, u, v );
+  return z;
+}
+
+/**
+ * Переходная функция для умножения вектора на вектор через функции из mul.cpp
+ * Память в 'z' должна быть выделена заранее в достаточном объёме.
+ */
+static void mul ( vec_t & z, const vec_t & u, const vec_t & v ) {
+  if ( u . size == 0 || v . size == 0 ) 
+    z . size = 0;
+  else if ( v . size == 1 )
+    // Вызывается функция из файла mul.cpp  
+    z . size = :: mul1 ( z . limbs, u . limbs, u . size, v [ 0 ] );
+  else 
+    // Вызывается функция из файла mul.cpp  
+    z . size = :: mul ( z . limbs, u . limbs, u . size, v . limbs, v . size );
+}
+
+/**
+ * Умножение u * v. 
+ * Нужная память выделяется здесь же.
+ */
+vec_t operator * ( const vec_t & u, const vec_t & v ) {  
+  vec_t z ( u . size + v . size );
+  mul ( z, u, v );
   return z;
 }
 
@@ -568,6 +615,29 @@ class num_t {
       return * this;
     }
 
+   /**
+     * Умножить на вектор
+     * Необходимая память должна быть выделена заранее.
+     */
+    offset_t mul ( const num_t & v ) {      
+      vec_t vec ( * this ), vec_v ( v );
+      vec *= vec_v;
+      if ( ( size ^ v . size ) < 0 ) size = - ( offset_t ) vec . size;
+      else size = ( offset_t ) vec . size;
+      vec . FreeAlias ( );
+      vec_v . FreeAlias ( );
+      return size;
+    }
+
+    /**
+     * Умножить на вектор
+     * Обёртка для mul (выше).
+     */
+    const num_t & operator *= ( const num_t & v ) {      
+      this -> mul ( v );
+      return * this;
+    }
+
     /**
      * Внешние операторы
      */
@@ -580,6 +650,7 @@ class num_t {
 
     friend num_t operator + ( const num_t &, const num_t & );
     friend num_t operator - ( const num_t &, const num_t & );
+    friend num_t operator * ( const num_t &, const num_t & );
 
 };
 
@@ -702,6 +773,30 @@ static void mul1 ( num_t & z, const num_t & u, limb_t v ) {
 num_t operator * ( const num_t & u, limb_t v ) {  
   num_t z ( abs ( u . size ) + 1 );
   mul1 ( z, u, v );
+  return z;
+}
+
+/**
+ * Умножение на вектор
+ * Память в 'z' должна быть выделена заранее в достаточном объёме.
+ */
+static void mul ( num_t & z, const num_t & u, const num_t & v ) {
+  vec_t vec_z ( z ), vec_u ( u ), vec_v ( v );
+  mul ( vec_z, vec_u, vec_v );
+  if ( ( u . size ^ v . size ) < 0 ) z . size = - ( offset_t ) vec_z . size;
+  else z . size = ( offset_t ) vec_z . size;
+  vec_z . FreeAlias ( );
+  vec_u . FreeAlias ( );
+  vec_v . FreeAlias ( );
+}
+
+/**
+ * Умножение u * v. 
+ * Нужная память выделяется здесь же.
+ */
+num_t operator * ( const num_t & u, const num_t & v ) {  
+  num_t z ( abs ( u . size ) + abs ( v . size ) );
+  mul ( z, u, v );
   return z;
 }
 

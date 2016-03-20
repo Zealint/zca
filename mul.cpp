@@ -43,7 +43,6 @@ namespace MulAsm {
    */
   limb_t __fastcall submul_N_by_1 ( limb_t * u, const limb_t * v, size_t size, limb_t w );
 
-
 };
 
 
@@ -218,7 +217,7 @@ namespace Mul1 {
 
 };
 
-using namespace MulAsm;
+using namespace Mul0;
 
 /**
  * Умножение вектора на либм z = u * v.
@@ -304,4 +303,32 @@ static bool submul ( limb_t * u, size_t size_u, const limb_t * v, size_t size_v,
   if ( size_u > size_v && borrow )
     borrow = sub ( u + size_v, size_u - size_v, borrow );
   return borrow == 0;
+}
+
+/**
+ * Умножение вектора на вектор z = u*v.
+ * Возвращает самый старший лимб.
+ * Память в z выделена заранее.
+ */
+
+limb_t __fastcall mul_N_by_M ( limb_t * z, const limb_t * u, size_t size_u, const limb_t * v, size_t size_v ) {
+  limb_t s = mul_N_by_1 ( z, u, size_u, * v, 0 );
+  z [ size_u ] = s;
+  while ( -- size_v > 0 ) {
+    v ++;
+    z ++;
+    s = addmul_N_by_1 ( z, u, size_u, * v );
+    z [ size_u ] = s;
+  }
+  return s;
+}
+
+/**
+ * Умножение вектора на вектор z = u*v.
+ * Возвращает размер результата.
+ * Память в z выделена заранее.
+ */
+static size_t mul ( limb_t * z, const limb_t * u, size_t size_u, const limb_t * v, size_t size_v ) {
+  limb_t carry = mul_N_by_M ( z, u, size_u, v, size_v );
+  return size_u + size_v - size_t ( carry == 0 );
 }

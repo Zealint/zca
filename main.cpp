@@ -1,6 +1,6 @@
 /**
- * Беседы о программировании 014.
- * Умножение вектора на лимб со сложением или вычитанием.
+ * Беседы о программировании 015.
+ * Умножение вектора на вектор.
  */
 #include "stdio.h"
 #include "mini-gmp.h"
@@ -8,11 +8,11 @@
 
 #define DEBUG
 
-const size_t N = 1024*1024;
+const size_t N = 1024*4;
 const size_t T = 1024*1;
 
-num_t a ( N + 1 ), b ( N ), c ( N + 1 ), d ( N + 1 );
-mpz_t A, B, C, D;
+num_t a ( N ), b ( N ), c ( 2 * N );
+mpz_t A, B, C;
 
 void Copy ( mpz_t & A, num_t & n ) {
   assert ( A [ 0 ] . _mp_alloc >= abs ( n . size ) );
@@ -29,80 +29,12 @@ bool isEqual ( mpz_t & A, num_t & n ) {
   return true;
 }
 
-// Адаптировано из mini-gmp
-void gmp_umul_ppmm ( limb_t & w1, limb_t & w0, limb_t u, limb_t v ) {
-    limb_t __x0, __x1, __x2, __x3;         
-    unsigned __ul, __vl, __uh, __vh;          
-    limb_t __u = (u), __v = (v);         
-    __ul = __u & 0xFFFF;          
-    __uh = __u >> 16;
-    __vl = __v & 0xFFFF;
-    __vh = __v >> 16;
-    __x0 = (limb_t) __ul * __vl;
-    __x1 = (limb_t) __ul * __vh;
-    __x2 = (limb_t) __uh * __vl;
-    __x3 = (limb_t) __uh * __vh;
-    __x1 += __x0 >> 16;/* this can't give carry */ 
-    __x1 += __x2;   /* but this indeed can */   
-    if (__x1 < __x2)    /* did we get it? */      
-      __x3 += 0x10000;  /* yes, add it in the proper pos. */
-    w1 = __x3 + (__x1 >> 16); 
-    w0 = (__x1 << 16) + (__x0 & 0xFFFF);
-}
-
-// Адаптировано из mini-gmp
-limb_t mpn_addmul_1 (limb_t * rp, const limb_t * up, size_t n, limb_t vl) {
-  limb_t ul, cl, hpl, lpl, rl;
-
-  cl = 0;
-  do
-    {
-      ul = *up++;
-      gmp_umul_ppmm (hpl, lpl, ul, vl);
-
-      lpl += cl;
-      cl = (lpl < cl) + hpl;
-
-      rl = *rp;
-      lpl = rl + lpl;
-      cl += lpl < rl;
-      *rp++ = lpl;
-    }
-  while (--n != 0);
-
-  return cl;
-}
-
-// Адаптировано из mini-gmp
-limb_t mpn_submul_1 (limb_t * rp, const limb_t * up, size_t n, limb_t vl)
-{
-  limb_t ul, cl, hpl, lpl, rl;
-  cl = 0;
-  do
-    {
-      ul = *up++;
-      gmp_umul_ppmm (hpl, lpl, ul, vl);
-
-      lpl += cl;
-      cl = (lpl < cl) + hpl;
-
-      rl = *rp;
-      lpl = rl - lpl;
-      cl += lpl > rl;
-      *rp++ = lpl;
-    }
-  while (--n != 0);
-
-  return cl;
-}
-
 int main ( ) {
 
-  mpz_init2 ( A, ( N + 1 ) * LIMB_BITS );
-  mpz_init2 ( B, ( N + 1 ) * LIMB_BITS );
-  mpz_init2 ( C, ( N + 1 ) * LIMB_BITS );
-  mpz_init2 ( D, ( N + 1 ) * LIMB_BITS );
-
+  mpz_init2 ( A, ( N ) * LIMB_BITS );
+  mpz_init2 ( B, ( N ) * LIMB_BITS );
+  mpz_init2 ( C, ( 2 * N ) * LIMB_BITS );
+  
 #ifdef DEBUG
   for ( size_t test = 0; test < T; test ++ ) {
     a . size = N;
@@ -121,55 +53,26 @@ int main ( ) {
         for ( size_t i = 0; i < abs ( b . size ); i ++ )
           b [ i ] = LIMB_T_MAX;
     }
-    //if ( rnd ( ) % 2 )  a . size = - a . size;
-    //if ( rnd ( ) % 2 )  b . size = - b . size;
+    if ( rnd ( ) % 2 )  a . size = - a . size;
+    if ( rnd ( ) % 2 )  b . size = - b . size;
     
     Copy ( A, a );
     Copy ( B, b );
 
+    /*
     limb_t r = rnd ( );
     if ( rnd ( ) % 5 )
       r = 0;
     if ( rnd ( ) % 5 )
       r = LIMB_T_MAX;
-    
-    mpz_addmul_ui ( A, B, r );
+    */
 
-    d = a;
-    vec_t cc ( c ), aa ( a ), bb ( b ), dd ( d );
-    addmul ( cc, aa, bb, r );
-    c . size = cc . size;
-    if ( ! isEqual ( A, c ) ) {
-      fprintf ( stderr, "ERROR in 'c=a+b*r'\n" );
+    mpz_mul ( C, A, B );
+    mul ( c, a, b );    
+    if ( ! isEqual ( C, c ) ) {
+      fprintf ( stderr, "ERROR in 'c=a*b'\n" );
       return 1;
-    }
-    
-    dd . addmul ( bb, r );
-    d . size = dd . size;
-    if ( ! isEqual ( A, d ) ) {
-      fprintf ( stderr, "ERROR in 'c+=b*r'\n" );
-      return 1;
-    }
-
-    mpz_submul_ui ( A, B, r );
-    submul ( aa, cc, bb, r );
-    a . size = aa . size;
-    if ( ! isEqual ( A, a ) ) {
-      fprintf ( stderr, "ERROR in 'c=a-b*r'\n" );
-      return 1;
-    }
-
-    dd . submul ( bb, r );
-    d . size = dd . size;
-    if ( ! isEqual ( A, d ) ) {
-      fprintf ( stderr, "ERROR in 'c-=b*r'\n" );
-      return 1;
-    }
-
-    cc . FreeAlias ( );
-    aa . FreeAlias ( );
-    bb . FreeAlias ( );
-    dd . FreeAlias ( );
+    }    
 
   }
   fprintf ( stderr, "OK\n" );
@@ -188,16 +91,10 @@ int main ( ) {
     //if ( rnd ( ) % 2 )  b . size = - b . size;
     Copy ( A, a );
     Copy ( B, b );
+            
+    //mpz_mul ( C, A, B );
 
-    limb_t r = rnd ( );
-        
-    //mpn_addmul_1 ( a . limbs, b . limbs, b . size, r );    
-    //addmul ( c . limbs, a . limbs, a . size, b . limbs, b . size, r );
-    //addmul ( a . limbs, a . size, b . limbs, b . size, r );
-
-    //mpn_submul_1 ( a . limbs, b . limbs, b . size, r );    
-    //submul ( c . limbs, a . limbs, a . size, b . limbs, b . size, r );
-    //submul ( a . limbs, a . size, b . limbs, b . size, r );           
+    mul ( c, a, b );
 
   }
 
