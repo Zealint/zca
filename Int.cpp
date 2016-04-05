@@ -25,6 +25,7 @@ const limb_t LIMB_T_MAX = 0xFFFFFFFF;
 #include "add.cpp"  // Всё, что касается сложения векторов.
 #include "sub.cpp"  // Вычитание векторов.
 #include "mul.cpp"  // Умножение векторов.
+#include "div.cpp"  // Деление векторов.
 
 class num_t;
 
