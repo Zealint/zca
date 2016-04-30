@@ -1,12 +1,12 @@
 /**
- * Беседы о программировании 018.
- * Деление 2/1, часть I.
+ * Беседы о программировании 021.
+ * Деление 3/2, часть I.
  */
 #include "stdio.h"
 #include "mini-gmp.h"
 #include "Int.cpp"
 
-#define DEBUG
+//#define DEBUG
 
 const size_t N = 1024*4;
 const size_t T = 1024*1024*1024;
@@ -67,40 +67,45 @@ int main ( ) {
       return 1;
     }    
     */
-    limb_t u1 = rnd ( ), 
+    limb_t u2 = rnd ( ), 
+           u1 = rnd ( ), 
            u0 = rnd ( ), 
-           d = rnd ( ) | 0x80000000, 
-           v = rnd ( ),
-           r, q;
-    while ( u1 >= d ) u1 >>= 1;
-    A [ 0 ] . _mp_size = 2;
+           d1 = rnd ( ) | 0x80000000, 
+           d0 = rnd ( ),            
+           r1, r0, q;
+    while ( u2 > d1 ) u2 >>= 1;
+    while ( u2 == d1 && u1 >= d0 ) u1 >>= 1;
+    A [ 0 ] . _mp_size = 3;
     A [ 0 ] . _mp_d [ 0 ] = u0;
     A [ 0 ] . _mp_d [ 1 ] = u1;
-    B [ 0 ] . _mp_size = 1;
-    B [ 0 ] . _mp_d [ 0 ] = d;
-    void mpz_fdiv_qr ( mpz_t, mpz_t, const mpz_t, const mpz_t );
+    A [ 0 ] . _mp_d [ 2 ] = u2;
+    B [ 0 ] . _mp_size = 2;
+    B [ 0 ] . _mp_d [ 0 ] = d0;
+    B [ 0 ] . _mp_d [ 1 ] = d1;
+    //void mpz_fdiv_qr ( mpz_t, mpz_t, const mpz_t, const mpz_t );
     mpz_fdiv_qr ( C, D, A, B );
-    r = div_2_by_1 ( q, u1, u0, d );
-    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size != 1 ||
-         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_d [ 0 ] != r ) {
+    q = div_3_by_2 ( q, r1, r0, u2, u1, u0, d1, d0 );
+    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size > 2 ||
+         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_size >= 1 && D [ 0 ] . _mp_d [ 0 ] != r0 || D [ 0 ] . _mp_size >= 2 && D [ 0 ] . _mp_d [ 1 ] != r1 ) {
       fprintf ( stderr, "ERROR in 'div'\n" );
       return 1;
     }
-    
-    r = div_2_by_1_pre ( q, u1, u0, d, inv_2_by_1 ( d ) );
-    if ( C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_d [ 0 ] != r ) {
+        
+    q = div_3_by_2_pre ( q, r1, r0, u2, u1, u0, d1, d0, inv_3_by_2 ( d1, d0 ) );
+    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size > 2 ||
+         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_size >= 1 && D [ 0 ] . _mp_d [ 0 ] != r0 || D [ 0 ] . _mp_size >= 2 && D [ 0 ] . _mp_d [ 1 ] != r1 ) {
       fprintf ( stderr, "ERROR in 'div_pre'\n" );
       return 1;
     }    
-
+    
   }
   fprintf ( stderr, "OK\n" );
   return 0;
 #endif
 
   size_t k = 0;
-  limb_t d = rnd ( ) | 0x80000000, v, q;
-  v = inv_2_by_1 ( d );
+  limb_t d1 = rnd ( ) | 0x80000000, d0 = rnd ( ), v, q, r1, r0;
+  v = inv_3_by_2 ( d1, d0 );
   for ( size_t test = 0; test < T; test ++ ) {
     /*
     a . size = N;
@@ -115,13 +120,12 @@ int main ( ) {
     Copy ( B, b );
     */
 
-    limb_t u1 = rnd ( ), u0 = rnd ( );    
-    while ( u1 >= d )  u1 >>= d;
-    dlimb_t U = ( ( dlimb_t ( u1 ) << LIMB_BITS ) | u0 );
+    limb_t u2 = rnd ( ), u1 = rnd ( ), u0 = rnd ( );    
+    while ( u2 >= d1 )  u2 >>= 1;
     //q = test;
 
     //q = U / d;
-    //div_2_by_1 ( q, u1, u0, d );
+    div_3_by_2 ( q, r1, r0, u2, u1, u0, d1, d0 );
     //div_2_by_1_pre ( q, u1, u0, d, v );
 
     k += q;
