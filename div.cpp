@@ -52,7 +52,68 @@ namespace DivAsm {
 };
 
 namespace Div0 {
-  // Данный раздел не завершён.
+  static limb_t __fastcall div_2_by_1 ( limb_t & q, limb_t u1, limb_t u0, limb_t d ) {        
+    const size_t HLIMB_BITS = LIMB_BITS / 2;
+    hlimb_t u0h, u0l, dh, dl;
+    u0h = ( hlimb_t ) ( u0 >> HLIMB_BITS );
+    u0l = ( hlimb_t ) u0;
+    dh = ( hlimb_t ) ( d >> HLIMB_BITS );
+    dl = ( hlimb_t ) d;
+    // Делим первые три полулимба (u1, u0h) на знаменатель
+    limb_t qh = u1 / dh;
+    limb_t dqh = qh * dl;
+    limb_t R = ( ( u1 - qh * dh ) << HLIMB_BITS ) | u0h;
+    if ( R < dqh ) {
+      -- qh;
+      R += d;
+      if ( R >= d && R < dqh ) {
+        -- qh;
+        R += d;
+      }
+    }    
+    R -= dqh;
+    q = ( qh << HLIMB_BITS ); // Старшая часть частного
+    // Делим последние три полулимба (R, u0l) на знаменатель
+    limb_t ql = R / dh;    
+    limb_t dql = ql * dl;
+    R = ( ( R - ql * dh ) << HLIMB_BITS ) | u0l;
+    if ( R < dql ) {
+      -- ql;
+      R += d;
+      if ( R >= d && R < dql ) {
+        -- ql;
+        R += d;
+      }
+    }
+    R -= dql;
+    q |= ql;  // Младшая часть ответа.
+    return R;
+  }
+
+  static limb_t __fastcall div_2_by_1_pre ( limb_t & q, limb_t u1, limb_t u0, limb_t d, limb_t v ) {
+    limb_t q1, q0;
+    mul_limbs ( q1, q0, u1, v );
+    q0 += u0;
+    q1 += u1 + 1 + ( q0 < u0 );
+    limb_t r = u0 - q1 * d;
+    if ( r > q0 ) {
+      -- q1;
+      r += d;
+    }
+    if ( r >= d ) {
+      ++ q1;
+      r -= d;
+    }
+    q = q1;
+    return r;    
+  }
+
+  limb_t __fastcall inv_2_by_1 ( limb_t d ) {
+    limb_t q;
+    div_2_by_1 ( q, ~ d, LIMB_T_MAX, d );
+    return q;
+  }
+    
 };
 
 
@@ -67,10 +128,11 @@ namespace Div1 {
     return limb_t ( U - dlimb_t ( q ) * d );
   }
 
+  // !!! Где-то здесь есть ошибка, но я пока не скажу, где !!!
   static limb_t __fastcall div_3_by_2 ( limb_t & q, limb_t & r1, limb_t & r0, limb_t u2, limb_t u1, limb_t u0, limb_t d1, limb_t d0 ) {
     dlimb_t U = glue ( u2, u1 );
     dlimb_t D = glue ( d1, d0 );
-    dlimb_t Q = U / d1;
+    dlimb_t Q = U / d1;    
     if ( Q >= ( dlimb_t ) ( LIMB_T_MAX ) + 1 )  Q = LIMB_T_MAX;
     dlimb_t DQ = Q * d0;
     dlimb_t R = ( ( U - Q * d1 ) << LIMB_BITS ) | u0;
@@ -129,4 +191,4 @@ namespace Div1 {
   }
 };
 
-using namespace Div1;
+using namespace Div0;

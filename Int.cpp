@@ -8,6 +8,7 @@
  * Базовые типы данных (для удобства)
  */
 typedef unsigned int limb_t;         // Один лимб - 32 бита без знака
+typedef unsigned short int hlimb_t;  // Половинный лимб - 16 битов без знака
 typedef unsigned long long dlimb_t;  // Двойной лимб - 64 бита без знака
 typedef char sign_t;                 // Знак (-1, 0, 1)
 typedef int offset_t;                // Знаковый размер длинного числа

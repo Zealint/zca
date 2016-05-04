@@ -1,6 +1,6 @@
 /**
- * Беседы о программировании 021.
- * Деление 3/2, часть I.
+ * Беседы о программировании 022.
+ * Деление 2/1, часть II.
  */
 #include "stdio.h"
 #include "mini-gmp.h"
@@ -67,6 +67,34 @@ int main ( ) {
       return 1;
     }    
     */
+
+    limb_t u1 = rnd ( ), 
+           u0 = rnd ( ), 
+           d = rnd ( ) | 0x80000000,            
+           r, q;
+    while ( u1 >= d ) u1 >>= 1;
+    A [ 0 ] . _mp_size = 2;
+    A [ 0 ] . _mp_d [ 0 ] = u0;
+    A [ 0 ] . _mp_d [ 1 ] = u1;
+    B [ 0 ] . _mp_size = 1;
+    B [ 0 ] . _mp_d [ 0 ] = d;
+    //void mpz_fdiv_qr ( mpz_t, mpz_t, const mpz_t, const mpz_t );
+    mpz_fdiv_qr ( C, D, A, B );
+    r = div_2_by_1 ( q, u1, u0, d );
+    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size != 1 ||
+         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_d [ 0 ] != r ) {
+      fprintf ( stderr, "ERROR in 'div'\n" );
+      return 1;
+    }
+        
+    r = div_2_by_1_pre ( q, u1, u0, d, inv_2_by_1 ( d ) );
+    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size != 1 ||
+         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_d [ 0 ] != r ) {
+      fprintf ( stderr, "ERROR in 'div_pre'\n" );
+      return 1;
+    } 
+
+    /*
     limb_t u2 = rnd ( ), 
            u1 = rnd ( ), 
            u0 = rnd ( ), 
@@ -97,6 +125,8 @@ int main ( ) {
       fprintf ( stderr, "ERROR in 'div_pre'\n" );
       return 1;
     }    
+
+    */
     
   }
   fprintf ( stderr, "OK\n" );
@@ -104,8 +134,10 @@ int main ( ) {
 #endif
 
   size_t k = 0;
-  limb_t d1 = rnd ( ) | 0x80000000, d0 = rnd ( ), v, q, r1, r0;
-  v = inv_3_by_2 ( d1, d0 );
+  //limb_t d1 = rnd ( ) | 0x80000000, d0 = rnd ( ), v, q, r1, r0;
+  //v = inv_2_by_1 ( d1, d0 );
+  limb_t d = rnd ( ) | 0x80000000, v, q, r;
+  v = inv_2_by_1 ( d );
   for ( size_t test = 0; test < T; test ++ ) {
     /*
     a . size = N;
@@ -120,13 +152,22 @@ int main ( ) {
     Copy ( B, b );
     */
 
-    limb_t u2 = rnd ( ), u1 = rnd ( ), u0 = rnd ( );    
+    /*limb_t u2 = rnd ( ), u1 = rnd ( ), u0 = rnd ( );    
     while ( u2 >= d1 )  u2 >>= 1;
     //q = test;
 
     //q = U / d;
-    div_3_by_2 ( q, r1, r0, u2, u1, u0, d1, d0 );
+    //div_3_by_2 ( q, r1, r0, u2, u1, u0, d1, d0 );
     //div_2_by_1_pre ( q, u1, u0, d, v );
+    */
+
+    limb_t u1 = rnd ( ), u0 = rnd ( );    
+    while ( u1 >= d )  u1 >>= 1;
+    q = test;
+
+    //q = U / d;
+    //div_2_by_1 ( q, u1, u0, d );
+    div_2_by_1_pre ( q, u1, u0, d, v );
 
     k += q;
                 
