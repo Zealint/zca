@@ -1,6 +1,6 @@
 /**
- * Беседы о программировании 022.
- * Деление 2/1, часть II.
+ * Беседы о программировании 023.
+ * Деление 3/2, часть II.
  */
 #include "stdio.h"
 #include "mini-gmp.h"
@@ -68,6 +68,7 @@ int main ( ) {
     }    
     */
 
+    /*
     limb_t u1 = rnd ( ), 
            u0 = rnd ( ), 
            d = rnd ( ) | 0x80000000,            
@@ -93,8 +94,8 @@ int main ( ) {
       fprintf ( stderr, "ERROR in 'div_pre'\n" );
       return 1;
     } 
-
-    /*
+    */
+    
     limb_t u2 = rnd ( ), 
            u1 = rnd ( ), 
            u0 = rnd ( ), 
@@ -102,7 +103,9 @@ int main ( ) {
            d0 = rnd ( ),            
            r1, r0, q;
     while ( u2 > d1 ) u2 >>= 1;
+    if ( rnd ( ) % 10 == 0 )  u2 = d1;
     while ( u2 == d1 && u1 >= d0 ) u1 >>= 1;
+    if ( d0 > 0 && rnd ( ) % 10 == 0 )  u1 = d0 - 1;
     A [ 0 ] . _mp_size = 3;
     A [ 0 ] . _mp_d [ 0 ] = u0;
     A [ 0 ] . _mp_d [ 1 ] = u1;
@@ -124,20 +127,18 @@ int main ( ) {
          C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_size >= 1 && D [ 0 ] . _mp_d [ 0 ] != r0 || D [ 0 ] . _mp_size >= 2 && D [ 0 ] . _mp_d [ 1 ] != r1 ) {
       fprintf ( stderr, "ERROR in 'div_pre'\n" );
       return 1;
-    }    
-
-    */
-    
+    }
+        
   }
   fprintf ( stderr, "OK\n" );
   return 0;
 #endif
 
   size_t k = 0;
-  //limb_t d1 = rnd ( ) | 0x80000000, d0 = rnd ( ), v, q, r1, r0;
-  //v = inv_2_by_1 ( d1, d0 );
-  limb_t d = rnd ( ) | 0x80000000, v, q, r;
-  v = inv_2_by_1 ( d );
+  limb_t d1 = rnd ( ) | 0x80000000, d0 = rnd ( ), v, q, r1, r0;
+  v = inv_3_by_2 ( d1, d0 );
+  //limb_t d = rnd ( ) | 0x80000000, v, q, r;
+  //v = inv_2_by_1 ( d );
   for ( size_t test = 0; test < T; test ++ ) {
     /*
     a . size = N;
@@ -152,24 +153,24 @@ int main ( ) {
     Copy ( B, b );
     */
 
-    /*limb_t u2 = rnd ( ), u1 = rnd ( ), u0 = rnd ( );    
+    limb_t u2 = rnd ( ), u1 = rnd ( ), u0 = rnd ( );    
     while ( u2 >= d1 )  u2 >>= 1;
-    //q = test;
 
-    //q = U / d;
+    q = test;
     //div_3_by_2 ( q, r1, r0, u2, u1, u0, d1, d0 );
-    //div_2_by_1_pre ( q, u1, u0, d, v );
-    */
+    //div_3_by_2_pre ( q, r1, r0, u2, u1, u0, d1, d0, v );
+    k += q;
 
+    /*
     limb_t u1 = rnd ( ), u0 = rnd ( );    
     while ( u1 >= d )  u1 >>= 1;
     q = test;
-
+    */
     //q = U / d;
     //div_2_by_1 ( q, u1, u0, d );
-    div_2_by_1_pre ( q, u1, u0, d, v );
+    //div_2_by_1_pre ( q, u1, u0, d, v );
 
-    k += q;
+    
                 
   }
 
