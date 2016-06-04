@@ -71,7 +71,7 @@ namespace DivAsm {
    * Результат в q, если q != nullptr
    * Остаток от деления в u.
    */
-  void __fastcall div_m_by_n ( limb_t * q, limb_t * u, const limb_t u_n, size_t size_u, const limb_t * d, size_t size_d, const DivInverse & inv );
+  //void __fastcall div_m_by_n ( limb_t * q, limb_t * u, const limb_t u_n, size_t size_u, const limb_t * d, size_t size_d, const DivInverse & inv );
 
 };
 
@@ -355,10 +355,7 @@ namespace Div0 {
     limb_t R = u_n, Q;
     size_t i = n;
     if ( q != nullptr ) 
-      while ( i -- > 0 ) {
-        R = div_2_by_1_pre ( Q, R, u [ i ], inv . d1, inv . v );
-        q [ i ] = Q;
-      }
+      while ( i -- > 0 ) R = div_2_by_1_pre ( q [ i ], R, u [ i ], inv . d1, inv . v );
     else 
       while ( i -- > 0 ) R = div_2_by_1_pre ( Q, R, u [ i ], inv . d1, inv . v );
     return R;
@@ -389,10 +386,7 @@ namespace Div1 {
     limb_t R = u_n, Q;
     size_t i = n;
     if ( q != nullptr ) 
-      while ( i -- > 0 ) {
-        R = div_2_by_1 ( Q, R, u [ i ], inv . d1 );
-        q [ i ] = Q;
-      }
+      while ( i -- > 0 )  R = div_2_by_1 ( q [ i ], R, u [ i ], inv . d1 );
     else 
       while ( i -- > 0 ) R = div_2_by_1 ( Q, R, u [ i ], inv . d1 );
     return R;
@@ -410,7 +404,6 @@ namespace Div1 {
       r [ 1 ] = R1;
     }
   }
-
 
 };
 
