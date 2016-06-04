@@ -1,22 +1,30 @@
 /**
- * Беседы о программировании 023.
- * Деление 3/2, часть II.
+ * Беседы о программировании 024.
+ * Деление n/1.
  */
 #include "stdio.h"
 #include "mini-gmp.h"
 #include "Int.cpp"
 
-//#define DEBUG
+#define DEBUG
 
-const size_t N = 1024*4;
-const size_t T = 1024*1024*1024;
+const size_t N = 1024*1024;
+const size_t T = 1024*1;
 
-num_t a ( N ), b ( N ), c ( 2 * N );
+num_t a ( N ), b ( N ), c ( N );
+//vec_t a ( N ), b ( N ), c ( N );
 mpz_t A, B, C, D;
 
 void Copy ( mpz_t & A, num_t & n ) {
   assert ( A [ 0 ] . _mp_alloc >= abs ( n . size ) );
   for ( size_t i = 0; i < abs ( n . size ); i ++ )
+    A [ 0 ] . _mp_d [ i ] = n [ i ];
+  A [ 0 ] . _mp_size = n . size;
+}
+
+void Copy ( mpz_t & A, vec_t & n ) {
+  assert ( A [ 0 ] . _mp_alloc >= n . size );
+  for ( size_t i = 0; i < n . size; i ++ )
     A [ 0 ] . _mp_d [ i ] = n [ i ];
   A [ 0 ] . _mp_size = n . size;
 }
@@ -29,16 +37,32 @@ bool isEqual ( mpz_t & A, num_t & n ) {
   return true;
 }
 
+bool isEqual ( mpz_t & A, slimb_t b ) {
+  if ( b == 0 )  return A [ 0 ] . _mp_size == 0;
+  if ( A [ 0 ] . _mp_size != ( b > 0 ? 1 : -1 ) )  return false;
+  if ( A [ 0 ] . _mp_d [ 0 ] != abs ( b ) )  return false;
+  return true;
+}
+
+bool isEqual ( mpz_t & A, vec_t & n ) {
+  if ( A [ 0 ] . _mp_size < 0 || A [ 0 ] . _mp_size != n . size )  return false;
+  for ( size_t i = 0; i < n . size; i ++ )
+    if ( A [ 0 ] . _mp_d [ i ] != n [ i ] )
+      return false;
+  return true;
+}
+
 int main ( ) {
 
   mpz_init2 ( A, ( N ) * LIMB_BITS );
   mpz_init2 ( B, ( N ) * LIMB_BITS );
-  mpz_init2 ( C, ( 2 * N ) * LIMB_BITS );
-  mpz_init2 ( D, ( 2 * N ) * LIMB_BITS );
+  mpz_init2 ( C, ( N ) * LIMB_BITS );
+  mpz_init2 ( D, ( N ) * LIMB_BITS );
   
 #ifdef DEBUG
   for ( size_t test = 0; test < T; test ++ ) {
-    /*a . size = N;
+    /*
+    a . size = N;
     b . size = N;
     rnd ( a );
     rnd ( b );
@@ -68,67 +92,44 @@ int main ( ) {
     }    
     */
 
-    /*
-    limb_t u1 = rnd ( ), 
-           u0 = rnd ( ), 
-           d = rnd ( ) | 0x80000000,            
-           r, q;
-    while ( u1 >= d ) u1 >>= 1;
-    A [ 0 ] . _mp_size = 2;
-    A [ 0 ] . _mp_d [ 0 ] = u0;
-    A [ 0 ] . _mp_d [ 1 ] = u1;
-    B [ 0 ] . _mp_size = 1;
-    B [ 0 ] . _mp_d [ 0 ] = d;
-    //void mpz_fdiv_qr ( mpz_t, mpz_t, const mpz_t, const mpz_t );
-    mpz_fdiv_qr ( C, D, A, B );
-    r = div_2_by_1 ( q, u1, u0, d );
-    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size != 1 ||
-         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_d [ 0 ] != r ) {
-      fprintf ( stderr, "ERROR in 'div'\n" );
+    a . size = N;
+    rnd ( a );    
+    a . size = size_t ( rnd ( ) % N );
+    if ( rnd ( ) % 20 == 0 )  a . size = 0;
+    if ( rnd ( ) % 10 == 0 )
+      for ( size_t i = 0; i < abs ( a . size ); i ++ )
+        a [ i ] = LIMB_T_MAX;
+    slimb_t d = rnd ( );
+    if ( rnd ( ) % 10 == 0 ) d = ( LIMB_T_MAX >> 1 );
+    if ( d == 0 )  ++ d;
+    if ( rnd ( ) % 2 )  a . size = - a . size;
+    if ( rnd ( ) % 2 )  d = -d;
+    Copy ( A, a );
+    B [ 0 ] . _mp_d [ 0 ] = abs ( d );
+    B [ 0 ] . _mp_size = d > 0 ? 1 : -1;
+        
+    mpz_tdiv_qr ( C, D, A, B );
+    num_t q0 = a / d;
+    slimb_t r = a % d;
+    if ( ! isEqual ( D, r ) || ! isEqual ( C, q0 ) ) {
+      fprintf ( stderr, "ERROR in / or %%\n" );
       return 1;
     }
-        
-    r = div_2_by_1_pre ( q, u1, u0, d, inv_2_by_1 ( d ) );
-    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size != 1 ||
-         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_d [ 0 ] != r ) {
-      fprintf ( stderr, "ERROR in 'div_pre'\n" );
+    num_t q1 = a;
+    q1 /= d;
+    if ( ! isEqual ( C, q1 ) ) {
+      fprintf ( stderr, "ERROR in /= \n" );
       return 1;
-    } 
-    */
+    }
+    num_t q2 = a;
+    q2 %= d;
+    if ( ! isEqual ( D, q2 ) ) {
+      fprintf ( stderr, "ERROR in %%= \n" );
+      return 1;
+    }
+
+    //fprintf ( stderr, "%u\n", test );
     
-    limb_t u2 = rnd ( ), 
-           u1 = rnd ( ), 
-           u0 = rnd ( ), 
-           d1 = rnd ( ) | 0x80000000, 
-           d0 = rnd ( ),            
-           r1, r0, q;
-    while ( u2 > d1 ) u2 >>= 1;
-    if ( rnd ( ) % 10 == 0 )  u2 = d1;
-    while ( u2 == d1 && u1 >= d0 ) u1 >>= 1;
-    if ( d0 > 0 && rnd ( ) % 10 == 0 )  u1 = d0 - 1;
-    A [ 0 ] . _mp_size = 3;
-    A [ 0 ] . _mp_d [ 0 ] = u0;
-    A [ 0 ] . _mp_d [ 1 ] = u1;
-    A [ 0 ] . _mp_d [ 2 ] = u2;
-    B [ 0 ] . _mp_size = 2;
-    B [ 0 ] . _mp_d [ 0 ] = d0;
-    B [ 0 ] . _mp_d [ 1 ] = d1;
-    //void mpz_fdiv_qr ( mpz_t, mpz_t, const mpz_t, const mpz_t );
-    mpz_fdiv_qr ( C, D, A, B );
-    q = div_3_by_2 ( q, r1, r0, u2, u1, u0, d1, d0 );
-    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size > 2 ||
-         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_size >= 1 && D [ 0 ] . _mp_d [ 0 ] != r0 || D [ 0 ] . _mp_size >= 2 && D [ 0 ] . _mp_d [ 1 ] != r1 ) {
-      fprintf ( stderr, "ERROR in 'div'\n" );
-      return 1;
-    }
-        
-    q = div_3_by_2_pre ( q, r1, r0, u2, u1, u0, d1, d0, inv_3_by_2 ( d1, d0 ) );
-    if ( C [ 0 ] . _mp_size != 1 || D [ 0 ] . _mp_size > 2 ||
-         C [ 0 ] . _mp_d [ 0 ] != q || D [ 0 ] . _mp_size >= 1 && D [ 0 ] . _mp_d [ 0 ] != r0 || D [ 0 ] . _mp_size >= 2 && D [ 0 ] . _mp_d [ 1 ] != r1 ) {
-      fprintf ( stderr, "ERROR in 'div_pre'\n" );
-      return 1;
-    }
-        
   }
   fprintf ( stderr, "OK\n" );
   return 0;
@@ -156,7 +157,7 @@ int main ( ) {
     limb_t u2 = rnd ( ), u1 = rnd ( ), u0 = rnd ( );    
     while ( u2 >= d1 )  u2 >>= 1;
 
-    q = test;
+    //q = test;
     //div_3_by_2 ( q, r1, r0, u2, u1, u0, d1, d0 );
     //div_3_by_2_pre ( q, r1, r0, u2, u1, u0, d1, d0, v );
     k += q;
@@ -169,8 +170,6 @@ int main ( ) {
     //q = U / d;
     //div_2_by_1 ( q, u1, u0, d );
     //div_2_by_1_pre ( q, u1, u0, d, v );
-
-    
                 
   }
 

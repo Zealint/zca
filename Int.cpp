@@ -8,10 +8,12 @@
  * Базовые типы данных (для удобства)
  */
 typedef unsigned int limb_t;         // Один лимб - 32 бита без знака
+typedef signed int slimb_t;          // "Лимб" со знаком
 typedef unsigned short int hlimb_t;  // Половинный лимб - 16 битов без знака
 typedef unsigned long long dlimb_t;  // Двойной лимб - 64 бита без знака
 typedef char sign_t;                 // Знак (-1, 0, 1)
 typedef int offset_t;                // Знаковый размер длинного числа
+typedef unsigned char u8;            // 8 бит без знака
 
 /**
  * Базовые константы
@@ -215,7 +217,7 @@ class vec_t {
 
     /**
      * Умножить на вектор
-     * Обёртка для mul1 (выше).
+     * Обёртка для mul (выше).
      */
     const vec_t & operator *= ( const vec_t & v ) {      
       this -> mul ( v );
@@ -243,6 +245,40 @@ class vec_t {
       :: submul ( limbs, size, u . limbs, u . size, v );
       return Normalize ( );
     }
+
+    /**
+     * Поделить на лимб с остатком. 
+     * r может быть nullptr.
+     */
+    size_t div_qr ( limb_t * r, limb_t v ) {
+      if ( size == 0 || v == 1 ) { 
+        if ( r != nullptr ) * r = 0; 
+        return size;
+      }
+      // Вызывается функция из файла div.cpp
+      return size = :: div_qr ( limbs, r, limbs, size, v );
+    }
+
+    /**
+     * Поделить на лимб
+     */
+    const vec_t & operator /= ( limb_t v ) {
+      this -> div_qr ( nullptr, v );
+      return * this;
+    }
+
+    /**
+     * Остаток от деления на лимб
+     */
+    const vec_t & operator %= ( limb_t v ) {
+      limb_t r;
+      this -> div_qr ( & r, v );
+      if ( r > 0 ) {
+        limbs [ 0 ] = r;
+        size = 1;
+      } else size = 0;
+      return * this;
+    }
     
     /**
      * Внешние операторы
@@ -257,6 +293,8 @@ class vec_t {
     friend vec_t operator + ( const vec_t &, const vec_t & );
     friend vec_t operator - ( const vec_t &, const vec_t & );
     friend vec_t operator * ( const vec_t &, const vec_t & );
+    friend vec_t operator / ( const vec_t &, limb_t );
+    friend limb_t operator % ( const vec_t &, limb_t );
 
 };
 
@@ -436,6 +474,43 @@ static sign_t fullSub ( vec_t & z, const vec_t & u, const vec_t & v ) {
   }
   return s;
 }
+
+/**
+ * Переходная функция для деления вектора vec_t на лимб через функции из div.cpp
+ * Память в 'z' должна быть выделена заранее в достаточном объёме.
+ * z и r могут быть равны nullptr.
+ */
+static void div_qr ( vec_t * z, limb_t * r, const vec_t & u, limb_t v ) {
+  if ( u . size == 0 ) {
+    if ( z != nullptr ) z -> size = 0;
+    if ( r != nullptr ) * r = 0;
+  }
+  else
+    // Вызывается функция из файла div.cpp
+    if ( z != nullptr ) z -> size = :: div_qr ( z -> limbs, r, u . limbs, u . size, v );
+    else :: div_qr ( nullptr, r, u . limbs, u . size, v );
+}
+
+/**
+ * Деление на один лимб u / v.
+ * Нужная память выделяется здесь же.
+ */
+vec_t operator / ( const vec_t & u, limb_t v ) {  
+  vec_t z ( u . size );
+  div_qr ( & z, nullptr, u, v );
+  return z;
+}
+
+/**
+ * Остаток от деления на один лимб u / v.
+ */
+limb_t operator % ( const vec_t & u, limb_t v ) {  
+  limb_t r;
+  div_qr ( nullptr, & r, u, v );
+  return r;
+}
+
+
 
 /**
  * Знаковый вектор лимбов. 
@@ -641,6 +716,43 @@ class num_t {
     }
 
     /**
+     * Поделить на знаковый лимб
+     */
+    offset_t div_qr ( slimb_t * r, slimb_t v ) {      
+      vec_t vec ( * this );
+      offset_t s = size;
+      bool is_neg = ( Sign ( ) < 0 ) ^ ( v < 0 );
+      vec . div_qr ( ( limb_t * ) r, ( limb_t ) abs ( v ) );
+      if ( r != nullptr && s < 0 ) * r = - * r;
+      if ( is_neg ) size = - ( offset_t ) vec . size;
+      else size = ( offset_t ) vec . size;
+      vec . FreeAlias ( );      
+      return size;
+    }
+
+    /**
+     * Поделить на знаковый лимб
+     */
+    const num_t & operator /= ( slimb_t v ) {      
+      this -> div_qr ( nullptr, v );
+      return * this;
+    }
+
+    /**
+     * Остаток от деления на знаковый лимб
+     */
+    const num_t & operator %= ( slimb_t v ) {      
+      slimb_t r;      
+      this -> div_qr ( & r, v );
+      if ( r != 0 ) {
+        limbs [ 0 ] = abs ( r );
+        size = r > 0 ? 1 : -1;
+      } else size = 0;
+      return * this;
+    }
+
+
+    /**
      * Внешние операторы
      */
     friend const bool operator < ( const num_t &, const num_t & );
@@ -801,6 +913,48 @@ num_t operator * ( const num_t & u, const num_t & v ) {
   mul ( z, u, v );
   return z;
 }
+
+/**
+ * Деление на лимб
+ */
+static void div_qr ( num_t * z, slimb_t * r, const num_t & u, slimb_t v ) {
+  bool is_neg = ( u . Sign ( ) < 0 ) ^ ( v < 0 );
+  if ( z != nullptr ) {
+    vec_t vec_z ( * z ), vec_u ( u );    
+    div_qr ( & vec_z, ( limb_t * ) r, vec_u, ( limb_t ) abs ( v ) );
+    if ( is_neg ) z -> size = - ( offset_t ) vec_z . size;
+    else z -> size = ( offset_t ) vec_z . size;
+    vec_z . FreeAlias ( );
+    vec_u . FreeAlias ( );
+  } else {
+    vec_t vec_u ( u );
+    div_qr ( nullptr, ( limb_t * ) r, vec_u, ( limb_t ) abs ( v ) );
+    vec_u . FreeAlias ( );
+  }
+  if ( r != nullptr && u . Sign ( ) < 0 ) * r = - * r;
+}
+
+/**
+ * Деление u / v. 
+ * Нужная память выделяется здесь же.
+ */
+num_t operator / ( const num_t & u, slimb_t v ) {  
+  num_t z ( abs ( u . size ) );
+  div_qr ( & z, nullptr, u, v );
+  return z;
+}
+
+/**
+ * Остаток от деления u % v. 
+ * Нужная память выделяется здесь же.
+ */
+slimb_t operator % ( const num_t & u, slimb_t v ) {  
+  slimb_t r;
+  div_qr ( nullptr, & r, u, v );
+  return r;
+}
+
+
 
 /**
  * Класс для генерации псевдослучайных векторов.
