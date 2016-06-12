@@ -33,20 +33,20 @@ const limb_t LIMB_T_MAX = 0xFFFFFFFF;
 class num_t;
 
 /**
- * Вектор лимбов. 
+ * Вектор лимбов.
  * Обёртка для массива лимбов и размера.
  */
 class vec_t {
-  public:    
+  public:
     size_t size;     // Размер (не обязательно нормализованного) вектора.
     limb_t * limbs;  // Массив лимбов.
 
-    /** 
-     * Конструкторы и деструктор 
+    /**
+     * Конструкторы и деструктор
      */
     vec_t ( ) : size ( 0 ), limbs ( nullptr ) { }
     vec_t ( size_t s ) : size ( s ), limbs ( new limb_t [ s ] ) { }
-    vec_t ( const vec_t & v ) : size ( v . size ), limbs ( new limb_t [ v . size ] ) { 
+    vec_t ( const vec_t & v ) : size ( v . size ), limbs ( new limb_t [ v . size ] ) {
       for ( size_t i = 0; i < v . size; i ++ )
         limbs [ i ] = v . limbs [ i ];
     }
@@ -60,7 +60,7 @@ class vec_t {
 
     /**
      * Привязать вектор без знака к вектору со знаком.
-     * Размер берётся по модулю (size=abs(n.size)), 
+     * Размер берётся по модулю (size=abs(n.size)),
      * а указатель на лимбы устанавливается на указатель n.limbs.
      */
     void Alias ( const num_t & n );
@@ -118,10 +118,10 @@ class vec_t {
      */
     vec_t & operator = ( const vec_t & v ) {
       if ( this == & v )
-        return * this;      
-      size = v . size;      
+        return * this;
+      size = v . size;
       for ( size_t i = 0; i < size; i ++ )
-        limbs [ i ] = v [ i ];      
+        limbs [ i ] = v [ i ];
       return * this;
     }
 
@@ -151,7 +151,7 @@ class vec_t {
      * Необходимая память должна быть выделена заранее.
      */
     size_t add ( const vec_t & v ) {
-      // Вызывается функция из файла add.cpp 
+      // Вызывается функция из файла add.cpp
       return size = :: add ( limbs, size, v . limbs, v . size );
     }
 
@@ -159,7 +159,7 @@ class vec_t {
      * Прибавить вектор 'v'
      * Обёртка для add (выше).
      */
-    const vec_t & operator += ( const vec_t & v ) {      
+    const vec_t & operator += ( const vec_t & v ) {
       this -> add ( v );
       return * this;
     }
@@ -179,7 +179,7 @@ class vec_t {
      * Отнять вектор 'v'.
      * Обёртка для sub (выше).
      */
-    const vec_t & operator -= ( const vec_t & v ) {      
+    const vec_t & operator -= ( const vec_t & v ) {
       this -> sub ( v );
       return * this;
     }
@@ -189,8 +189,8 @@ class vec_t {
      * Необходимая память должна быть выделена заранее.
      */
     size_t mul1 ( limb_t v ) {
-      if ( size == 0 || v == 0 ) return size = 0;      
-      // Вызывается функция из файла mul.cpp 
+      if ( size == 0 || v == 0 ) return size = 0;
+      // Вызывается функция из файла mul.cpp
       return size = :: mul1 ( limbs, size, v );
     }
 
@@ -198,7 +198,7 @@ class vec_t {
      * Умножить на лимб
      * Обёртка для mul1 (выше).
      */
-    const vec_t & operator *= ( limb_t v ) {      
+    const vec_t & operator *= ( limb_t v ) {
       this -> mul1 ( v );
       return * this;
     }
@@ -219,7 +219,7 @@ class vec_t {
      * Умножить на вектор
      * Обёртка для mul (выше).
      */
-    const vec_t & operator *= ( const vec_t & v ) {      
+    const vec_t & operator *= ( const vec_t & v ) {
       this -> mul ( v );
       return * this;
     }
@@ -230,7 +230,7 @@ class vec_t {
      */
     size_t addmul ( const vec_t & u, limb_t v ) {
       if ( u . size == 0 || v == 0 ) return size;
-      // Вызывается функция из файла mul.cpp 
+      // Вызывается функция из файла mul.cpp
       return size = :: addmul ( limbs, size, u . limbs, u . size, v );
     }
 
@@ -241,18 +241,18 @@ class vec_t {
      */
     size_t submul ( const vec_t & u, limb_t v ) {
       if ( u . size == 0 || v == 0 ) return size;
-      // Вызывается функция из файла mul.cpp 
+      // Вызывается функция из файла mul.cpp
       :: submul ( limbs, size, u . limbs, u . size, v );
       return Normalize ( );
     }
 
     /**
-     * Поделить на лимб с остатком. 
+     * Поделить на лимб с остатком.
      * r может быть nullptr.
      */
     size_t div_qr ( limb_t * r, limb_t v ) {
-      if ( size == 0 || v == 1 ) { 
-        if ( r != nullptr ) * r = 0; 
+      if ( size == 0 || v == 1 ) {
+        if ( r != nullptr ) * r = 0;
         return size;
       }
       // Вызывается функция из файла div.cpp
@@ -279,7 +279,29 @@ class vec_t {
       } else size = 0;
       return * this;
     }
-    
+
+    /**
+     * Поделить на вектор с остатком.
+     * r может быть nullptr.
+     */
+    size_t div_qr ( vec_t * r, const vec_t & d ) {
+      if ( size == 0 ) {
+        if ( r != nullptr ) * r = * this;
+        return size;
+      }
+      // Вызывается функция из файла div.cpp
+      if ( r != nullptr ) {
+        * r = * this;
+        size = :: div_qr ( limbs, r -> limbs, r -> size, d . limbs, d . size );
+      }
+      else {
+        r = new vec_t ( * this );
+        size = :: div_qr ( limbs, r -> limbs, r -> size, d . limbs, d . size );
+        delete r;
+      }
+      return size;
+    }
+
     /**
      * Внешние операторы
      */
@@ -330,7 +352,7 @@ const bool operator != ( const vec_t & u, const vec_t & v ) {
  * Память в 'z' должна быть выделена заранее в достаточном объёме.
  */
 static void add ( vec_t & z, const vec_t & u, const vec_t & v ) {
-  // Вызывается функция из файла add.cpp  
+  // Вызывается функция из файла add.cpp
   if ( z . limbs == u . limbs ) // Сложение "на месте" u += v
     z . size = :: add ( z . limbs, u . size, v . limbs, v . size );
   else if ( z . limbs == v . limbs )  // Сложение "на месте" v += u
@@ -340,10 +362,10 @@ static void add ( vec_t & z, const vec_t & u, const vec_t & v ) {
 }
 
 /**
- * Сложение u + v. 
+ * Сложение u + v.
  * Нужная память выделяется здесь же.
  */
-vec_t operator + ( const vec_t & u, const vec_t & v ) {  
+vec_t operator + ( const vec_t & u, const vec_t & v ) {
   vec_t z ( max ( u . size, v . size ) + 1 );
   add ( z, u, v );
   return z;
@@ -354,18 +376,18 @@ vec_t operator + ( const vec_t & u, const vec_t & v ) {
  * Память в 'z' должна быть выделена заранее в достаточном объёме.
  * u >= v.
  */
-static void sub ( vec_t & z, const vec_t & u, const vec_t & v ) {  
+static void sub ( vec_t & z, const vec_t & u, const vec_t & v ) {
   if ( z . limbs == u . limbs ) // "На месте", u-=v.
-    :: sub ( z . limbs, u . size, v . limbs, v . size );  
+    :: sub ( z . limbs, u . size, v . limbs, v . size );
   else // Не "на месте".
-    :: sub ( z . limbs, u . limbs, u . size, v . limbs, v . size );  
+    :: sub ( z . limbs, u . limbs, u . size, v . limbs, v . size );
   z . size = u . size;
   z . Normalize ( );
 }
 
 /**
  * Вычитание u - v.
- * u >= v. 
+ * u >= v.
  * Память выделяется здесь же.
  */
 vec_t operator - ( const vec_t & u, const vec_t & v ) {
@@ -379,10 +401,10 @@ vec_t operator - ( const vec_t & u, const vec_t & v ) {
  * Память в 'z' должна быть выделена заранее в достаточном объёме.
  */
 static void mul1 ( vec_t & z, const vec_t & u, limb_t v ) {
-  if ( u . size == 0 || v == 0 ) 
+  if ( u . size == 0 || v == 0 )
     z . size = 0;
-  else 
-    // Вызывается функция из файла mul.cpp  
+  else
+    // Вызывается функция из файла mul.cpp
     z . size = mul1 ( z . limbs, u . limbs, u . size, v );
 }
 
@@ -396,9 +418,9 @@ static void addmul ( vec_t & z, const vec_t & u, const vec_t & v, limb_t w ) {
     z = u; // Копирование без выделения памяти.
   }
   else {
-    if ( z . limbs == u . limbs ) 
-      z . size = :: addmul ( z . limbs, u . size, v . limbs, v . size, w );    
-    else 
+    if ( z . limbs == u . limbs )
+      z . size = :: addmul ( z . limbs, u . size, v . limbs, v . size, w );
+    else
       z . size = :: addmul ( z . limbs, u . limbs, u . size, v . limbs, v . size, w );
   }
 }
@@ -412,7 +434,7 @@ static void submul ( vec_t & z, const vec_t & u, const vec_t & v, limb_t w ) {
     if ( z . limbs == u . limbs ) return;
     z = u; // Копирование без выделения памяти.
   }
-  else {    
+  else {
     if ( z . limbs == u . limbs )
       :: submul ( z . limbs, u . size, v . limbs, v . size, w );
     else
@@ -423,10 +445,10 @@ static void submul ( vec_t & z, const vec_t & u, const vec_t & v, limb_t w ) {
 }
 
 /**
- * Умножение u * v. 
+ * Умножение u * v.
  * Нужная память выделяется здесь же.
  */
-vec_t operator * ( const vec_t & u, limb_t v ) {  
+vec_t operator * ( const vec_t & u, limb_t v ) {
   vec_t z ( u . size + 1 );
   mul1 ( z, u, v );
   return z;
@@ -437,21 +459,21 @@ vec_t operator * ( const vec_t & u, limb_t v ) {
  * Память в 'z' должна быть выделена заранее в достаточном объёме.
  */
 static void mul ( vec_t & z, const vec_t & u, const vec_t & v ) {
-  if ( u . size == 0 || v . size == 0 ) 
+  if ( u . size == 0 || v . size == 0 )
     z . size = 0;
   else if ( v . size == 1 )
-    // Вызывается функция из файла mul.cpp  
+    // Вызывается функция из файла mul.cpp
     z . size = :: mul1 ( z . limbs, u . limbs, u . size, v [ 0 ] );
-  else 
-    // Вызывается функция из файла mul.cpp  
+  else
+    // Вызывается функция из файла mul.cpp
     z . size = :: mul ( z . limbs, u . limbs, u . size, v . limbs, v . size );
 }
 
 /**
- * Умножение u * v. 
+ * Умножение u * v.
  * Нужная память выделяется здесь же.
  */
-vec_t operator * ( const vec_t & u, const vec_t & v ) {  
+vec_t operator * ( const vec_t & u, const vec_t & v ) {
   vec_t z ( u . size + v . size );
   mul ( z, u, v );
   return z;
@@ -461,7 +483,7 @@ vec_t operator * ( const vec_t & u, const vec_t & v ) {
  * Вычесть из большего вектора меньший.
  * Вспомогательная функция для вычитания знаковых векторов (ниже).
  */
-static sign_t fullSub ( vec_t & z, const vec_t & u, const vec_t & v ) {  
+static sign_t fullSub ( vec_t & z, const vec_t & u, const vec_t & v ) {
   sign_t s = u . Compare ( v );  // Кто больше?
   if ( s == 0 ) z . size = 0; // В случае равенства результат 0.
   else if ( s > 0 ) {         // u > v
@@ -495,7 +517,7 @@ static void div_qr ( vec_t * z, limb_t * r, const vec_t & u, limb_t v ) {
  * Деление на один лимб u / v.
  * Нужная память выделяется здесь же.
  */
-vec_t operator / ( const vec_t & u, limb_t v ) {  
+vec_t operator / ( const vec_t & u, limb_t v ) {
   vec_t z ( u . size );
   div_qr ( & z, nullptr, u, v );
   return z;
@@ -504,7 +526,7 @@ vec_t operator / ( const vec_t & u, limb_t v ) {
 /**
  * Остаток от деления на один лимб u / v.
  */
-limb_t operator % ( const vec_t & u, limb_t v ) {  
+limb_t operator % ( const vec_t & u, limb_t v ) {
   limb_t r;
   div_qr ( nullptr, & r, u, v );
   return r;
@@ -513,20 +535,20 @@ limb_t operator % ( const vec_t & u, limb_t v ) {
 
 
 /**
- * Знаковый вектор лимбов. 
+ * Знаковый вектор лимбов.
  * Обёртка для массива лимбов и знакового размера.
  */
 class num_t {
-  public:    
+  public:
     offset_t size;   // Знаковый размер (не обязательно нормализованного) вектора.
     limb_t * limbs;  // Массив лимбов.
 
-    /** 
-     * Конструкторы и деструктор 
+    /**
+     * Конструкторы и деструктор
      */
     num_t ( ) : size ( 0 ), limbs ( nullptr ) { }
     num_t ( offset_t s ) : size ( s ), limbs ( new limb_t [ abs ( s ) ] ) { }
-    num_t ( const num_t & n ) : size ( n . size ), limbs ( new limb_t [ abs ( n . size ) ] ) { 
+    num_t ( const num_t & n ) : size ( n . size ), limbs ( new limb_t [ abs ( n . size ) ] ) {
       for ( size_t i = 0; i < abs ( n . size ); i ++ )
         limbs [ i ] = n . limbs [ i ];
     }
@@ -566,7 +588,7 @@ class num_t {
       if ( size > n . size )  return 1;
       if ( size == 0 )  return 0;
       // Переходим к беззнаковым векторам.
-      vec_t vec ( * this ), vec_n ( n );      
+      vec_t vec ( * this ), vec_n ( n );
       sign_t res = vec . CompareEqualSize ( vec_n );
       vec . FreeAlias ( );
       vec_n . FreeAlias ( );
@@ -581,7 +603,7 @@ class num_t {
     num_t & operator = ( const num_t & n ) {
       if ( this == & n )
         return * this;
-      size = n . size;      
+      size = n . size;
       for ( size_t i = 0; i < abs ( size ); i ++ )
         limbs [ i ] = n [ i ];
       return * this;
@@ -612,8 +634,8 @@ class num_t {
      * Прибавить вектор 'n'
      * Необходимая память должна быть выделена заранее.
      */
-    offset_t add ( const num_t & n ) {      
-      vec_t vec ( * this ), vec_n ( n );      
+    offset_t add ( const num_t & n ) {
+      vec_t vec ( * this ), vec_n ( n );
       sign_t s;
       // Переменные разного знака.
       if ( ( Sign ( ) ^ n . Sign ( ) ) < 0 ) {
@@ -644,7 +666,7 @@ class num_t {
      * Отнять вектор 'n'.
      */
     offset_t sub ( const num_t & n ) {
-      vec_t vec ( * this ), vec_n ( n );      
+      vec_t vec ( * this ), vec_n ( n );
       sign_t s;
       // Переменные разного знака.
       if ( ( Sign ( ) ^ n . Sign ( ) ) < 0 ) {
@@ -653,7 +675,7 @@ class num_t {
       }
       else {
         s = :: fullSub ( vec, vec, vec_n );
-        if ( Sign ( ) < 0 )  s = -s;   
+        if ( Sign ( ) < 0 )  s = -s;
       }
       size = ( offset_t ) s * vec . size;
       vec . FreeAlias ( );
@@ -665,7 +687,7 @@ class num_t {
      * Отнять вектор 'n'
      * Обёртка для sub (выше).
      */
-    const num_t & operator -= ( const num_t & n ) {      
+    const num_t & operator -= ( const num_t & n ) {
       this -> sub ( n );
       return * this;
     }
@@ -674,7 +696,7 @@ class num_t {
      * Умножить на лимб
      * Необходимая память должна быть выделена заранее.
      */
-    offset_t mul1 ( limb_t v ) {      
+    offset_t mul1 ( limb_t v ) {
       vec_t vec ( * this );
       vec *= v;
       if ( size < 0 ) size = - ( offset_t ) vec . size;
@@ -687,7 +709,7 @@ class num_t {
      * Умножить на лимб
      * Обёртка для mul1 (выше).
      */
-    const num_t & operator *= ( limb_t v ) {      
+    const num_t & operator *= ( limb_t v ) {
       this -> mul1 ( v );
       return * this;
     }
@@ -696,7 +718,7 @@ class num_t {
      * Умножить на вектор
      * Необходимая память должна быть выделена заранее.
      */
-    offset_t mul ( const num_t & v ) {      
+    offset_t mul ( const num_t & v ) {
       vec_t vec ( * this ), vec_v ( v );
       vec *= vec_v;
       if ( ( size ^ v . size ) < 0 ) size = - ( offset_t ) vec . size;
@@ -710,7 +732,7 @@ class num_t {
      * Умножить на вектор
      * Обёртка для mul (выше).
      */
-    const num_t & operator *= ( const num_t & v ) {      
+    const num_t & operator *= ( const num_t & v ) {
       this -> mul ( v );
       return * this;
     }
@@ -718,7 +740,7 @@ class num_t {
     /**
      * Поделить на знаковый лимб
      */
-    offset_t div_qr ( slimb_t * r, slimb_t v ) {      
+    offset_t div_qr ( slimb_t * r, slimb_t v ) {
       vec_t vec ( * this );
       offset_t s = size;
       bool is_neg = ( Sign ( ) < 0 ) ^ ( v < 0 );
@@ -726,14 +748,14 @@ class num_t {
       if ( r != nullptr && s < 0 ) * r = - * r;
       if ( is_neg ) size = - ( offset_t ) vec . size;
       else size = ( offset_t ) vec . size;
-      vec . FreeAlias ( );      
+      vec . FreeAlias ( );
       return size;
     }
 
     /**
      * Поделить на знаковый лимб
      */
-    const num_t & operator /= ( slimb_t v ) {      
+    const num_t & operator /= ( slimb_t v ) {
       this -> div_qr ( nullptr, v );
       return * this;
     }
@@ -741,8 +763,8 @@ class num_t {
     /**
      * Остаток от деления на знаковый лимб
      */
-    const num_t & operator %= ( slimb_t v ) {      
-      slimb_t r;      
+    const num_t & operator %= ( slimb_t v ) {
+      slimb_t r;
       this -> div_qr ( & r, v );
       if ( r != 0 ) {
         limbs [ 0 ] = abs ( r );
@@ -811,8 +833,8 @@ const bool operator != ( const num_t & u, const num_t & v ) {
  * Сложение z = u + v.
  * Память для z должна быть выделена заранее.
  */
-static void add ( num_t & z, const num_t & u, const num_t & v ) {  
-  vec_t vec_z ( z ), vec_u ( u ), vec_v ( v );  
+static void add ( num_t & z, const num_t & u, const num_t & v ) {
+  vec_t vec_z ( z ), vec_u ( u ), vec_v ( v );
   sign_t s;
   if ( ( u . Sign ( ) ^ v . Sign ( ) ) < 0 ) {
     s = :: fullSub ( vec_z, vec_u, vec_v );
@@ -821,7 +843,7 @@ static void add ( num_t & z, const num_t & u, const num_t & v ) {
   else {
     add ( vec_z, vec_u, vec_v );
     s = u . Sign ( ) < 0 ? -1 : 1;
-  }  
+  }
   z . size = ( offset_t ) s * vec_z . size;
   vec_u . FreeAlias ( );
   vec_v . FreeAlias ( );
@@ -841,8 +863,8 @@ num_t operator + ( const num_t & u, const num_t & v ) {
  * Вычитание z = u - v.
  * Память для 'z' должна быть выделена заранее.
  */
-static void sub ( num_t & z, const num_t & u, const num_t & v ) {  
-  vec_t vec_z ( z ), vec_u ( u ), vec_v ( v );  
+static void sub ( num_t & z, const num_t & u, const num_t & v ) {
+  vec_t vec_z ( z ), vec_u ( u ), vec_v ( v );
   sign_t s;
   if ( ( u . Sign ( ) ^ v . Sign ( ) ) < 0 ) {
     :: add ( vec_z, vec_u, vec_v );
@@ -881,10 +903,10 @@ static void mul1 ( num_t & z, const num_t & u, limb_t v ) {
 }
 
 /**
- * Умножение u * v. 
+ * Умножение u * v.
  * Нужная память выделяется здесь же.
  */
-num_t operator * ( const num_t & u, limb_t v ) {  
+num_t operator * ( const num_t & u, limb_t v ) {
   num_t z ( abs ( u . size ) + 1 );
   mul1 ( z, u, v );
   return z;
@@ -905,10 +927,10 @@ static void mul ( num_t & z, const num_t & u, const num_t & v ) {
 }
 
 /**
- * Умножение u * v. 
+ * Умножение u * v.
  * Нужная память выделяется здесь же.
  */
-num_t operator * ( const num_t & u, const num_t & v ) {  
+num_t operator * ( const num_t & u, const num_t & v ) {
   num_t z ( abs ( u . size ) + abs ( v . size ) );
   mul ( z, u, v );
   return z;
@@ -920,7 +942,7 @@ num_t operator * ( const num_t & u, const num_t & v ) {
 static void div_qr ( num_t * z, slimb_t * r, const num_t & u, slimb_t v ) {
   bool is_neg = ( u . Sign ( ) < 0 ) ^ ( v < 0 );
   if ( z != nullptr ) {
-    vec_t vec_z ( * z ), vec_u ( u );    
+    vec_t vec_z ( * z ), vec_u ( u );
     div_qr ( & vec_z, ( limb_t * ) r, vec_u, ( limb_t ) abs ( v ) );
     if ( is_neg ) z -> size = - ( offset_t ) vec_z . size;
     else z -> size = ( offset_t ) vec_z . size;
@@ -935,20 +957,20 @@ static void div_qr ( num_t * z, slimb_t * r, const num_t & u, slimb_t v ) {
 }
 
 /**
- * Деление u / v. 
+ * Деление u / v.
  * Нужная память выделяется здесь же.
  */
-num_t operator / ( const num_t & u, slimb_t v ) {  
+num_t operator / ( const num_t & u, slimb_t v ) {
   num_t z ( abs ( u . size ) );
   div_qr ( & z, nullptr, u, v );
   return z;
 }
 
 /**
- * Остаток от деления u % v. 
+ * Остаток от деления u % v.
  * Нужная память выделяется здесь же.
  */
-slimb_t operator % ( const num_t & u, slimb_t v ) {  
+slimb_t operator % ( const num_t & u, slimb_t v ) {
   slimb_t r;
   div_qr ( nullptr, & r, u, v );
   return r;
@@ -966,7 +988,7 @@ class rnd_t {
   public:
 
     /**
-     * Сгенерировать лимб.     
+     * Сгенерировать лимб.
      */
     limb_t operator ( ) ( ) {
       return r = A * r + 1;
@@ -976,7 +998,7 @@ class rnd_t {
      * Сгенерировать нормализованный вектор размером u . size
      * Объём выделенной ранее памяти для limbs должен быть не меньше u . size
      */
-    void operator ( ) ( vec_t & u ) {      
+    void operator ( ) ( vec_t & u ) {
       for ( size_t i = 0; i < u . size; i ++ )
         u . limbs [ i ] = this -> operator ( ) ( );
       // Обеспечим чтобы старший лимб не был равен нулю.
@@ -1003,7 +1025,7 @@ class rnd_t {
      * Сгенерировать нормализованный знаковый вектор размером n.size
      * Объём выделенной ранее памяти для limbs должен быть не меньше |n.size|
      */
-    void operator ( ) ( num_t & n ) {      
+    void operator ( ) ( num_t & n ) {
       vec_t vec_n;
       vec_n . Alias ( n );
       this -> operator ( ) ( vec_n );

@@ -67,7 +67,7 @@ namespace DivAsm {
 
   /**
    * Деление m/n. Делим (u_m, u_(m-1), ..., u_0) на d=(d_(n-1), ..., d_0). Причём d>0 и d нормализован.
-   * n > 2. 
+   * n > 2.
    * Результат в q, если q != nullptr
    * Остаток от деления в u.
    */
@@ -77,7 +77,7 @@ namespace DivAsm {
 
 namespace Div0 {
 
-  static limb_t __fastcall div_2_by_1 ( limb_t & q, limb_t u1, limb_t u0, limb_t d ) {        
+  static limb_t __fastcall div_2_by_1 ( limb_t & q, limb_t u1, limb_t u0, limb_t d ) {
     const size_t HLIMB_BITS = LIMB_BITS / 2;
     hlimb_t u0h, u0l, dh, dl;
     u0h = ( hlimb_t ) ( u0 >> HLIMB_BITS );
@@ -95,11 +95,11 @@ namespace Div0 {
         -- qh;
         R += d;
       }
-    }    
+    }
     R -= dqh;
     q = ( qh << HLIMB_BITS ); // Старшая часть частного
     // Делим последние три полулимба (R, u0l) на знаменатель
-    limb_t ql = R / dh;    
+    limb_t ql = R / dh;
     limb_t dql = ql * dl;
     R = ( ( R - ql * dh ) << HLIMB_BITS ) | u0l;
     if ( R < dql ) {
@@ -115,16 +115,16 @@ namespace Div0 {
     return R;
   }
 
-  static limb_t __fastcall div_3_by_2 ( limb_t & q, limb_t & r1, limb_t & r0, limb_t u2, limb_t u1, limb_t u0, limb_t d1, limb_t d0 ) {    
+  static limb_t __fastcall div_3_by_2 ( limb_t & q, limb_t & r1, limb_t & r0, limb_t u2, limb_t u1, limb_t u0, limb_t d1, limb_t d0 ) {
     if ( u2 == d1 ) {
       limb_t s1 = d0 - u1 - ( u0 != 0 );
       limb_t s0 = -u0;
       if ( s1 < d1 || s1 == d1 && s0 <= d0 ) {
-        q = LIMB_T_MAX;        
+        q = LIMB_T_MAX;
         r1 = d1 - s1 - ( d0 < s0 );
         r0 = d0 - s0;
       } else {
-        q = LIMB_T_MAX - 1;        
+        q = LIMB_T_MAX - 1;
         r1 = d1 - s1 - ( d0 < s0 );
         r0 = d0 - s0;
         r0 += d0;
@@ -147,7 +147,7 @@ namespace Div0 {
       }
     }
     r1 -= DQ1 + ( r0 < DQ0 );
-    r0 -= DQ0;    
+    r0 -= DQ0;
     return q;
   }
 
@@ -166,7 +166,7 @@ namespace Div0 {
       r -= d;
     }
     q = q1;
-    return r;    
+    return r;
   }
 
   static limb_t __fastcall div_3_by_2_pre ( limb_t & q, limb_t & r1, limb_t & r0, limb_t u2, limb_t u1, limb_t u0, limb_t d1, limb_t d0, limb_t v ) {
@@ -187,7 +187,7 @@ namespace Div0 {
       r1 += d1 + ( r0 < d0 );
     }
     if ( r1 > d1 || r1 == d1 && r0 >= d0 ) {
-      q1 ++;      
+      q1 ++;
       r1 = r1 - d1 - ( r0 < d0 );
       r0 -= d0;
     }
@@ -201,7 +201,7 @@ namespace Div0 {
     return q;
   }
 
-  static limb_t __fastcall inv_3_by_2 ( limb_t d1, limb_t d0 ) {    
+  static limb_t __fastcall inv_3_by_2 ( limb_t d1, limb_t d0 ) {
     limb_t r1, r0, q;
     return div_3_by_2 ( q, r1, r0, ~d1, ~d0, LIMB_T_MAX, d1, d0 );
   }
@@ -228,11 +228,11 @@ namespace Div1 {
       dlimb_t S = ( ( dlimb_t ) ( s1 ) << LIMB_BITS ) - u0;
       if ( S <= D ) {
         q = LIMB_T_MAX;
-        dlimb_t R = D - S;       
+        dlimb_t R = D - S;
         r1 = ( limb_t ) ( R >> LIMB_BITS );
         r0 = ( limb_t ) ( R );
       } else {
-        q = LIMB_T_MAX - 1;        
+        q = LIMB_T_MAX - 1;
         dlimb_t R = 2 * D - S;
         r1 = ( limb_t ) ( R >> LIMB_BITS );
         r0 = ( limb_t ) ( R );
@@ -298,7 +298,7 @@ namespace Div1 {
 
 };
 
-using namespace Div1;
+using namespace Div0;
 
 /**
  * Класс для обратного элемента.
@@ -314,7 +314,7 @@ class DivInverse {
     shift = count_lz ( d );
     d1 = d << shift;
     Invert1 ( );
-  }  
+  }
   // Инвертировать два лимба
   void __fastcall Init ( limb_t dh, limb_t dl ) {
     shift = count_lz ( dh );
@@ -331,13 +331,13 @@ class DivInverse {
     shift = count_lz ( dh );
     if ( shift > 0 ) {
       dh = dh << shift | dl >> ( LIMB_BITS - shift );
-      dl = dl << shift | tail >> ( LIMB_BITS - shift );      
+      dl = dl << shift | tail >> ( LIMB_BITS - shift );
     }
     d1 = dh;
     d0 = dl;
     Invert2 ( );
   }
-  
+
 public:
   limb_t v; // Обратный элемент
   limb_t d1, d0;  // Нормализованный делитель (d0 не используется для 2/1 деления).
@@ -350,23 +350,23 @@ public:
 };
 
 namespace Div0 {
-  
+
   limb_t __fastcall div_n_by_1 ( limb_t * q, const limb_t u_n, const limb_t * u, size_t n, const DivInverse & inv ) {
     limb_t R = u_n, Q;
     size_t i = n;
-    if ( q != nullptr ) 
+    if ( q != nullptr )
       while ( i -- > 0 ) R = div_2_by_1_pre ( q [ i ], R, u [ i ], inv . d1, inv . v );
-    else 
+    else
       while ( i -- > 0 ) R = div_2_by_1_pre ( Q, R, u [ i ], inv . d1, inv . v );
     return R;
   }
-    
+
   void __fastcall div_n_by_2 ( limb_t * q, limb_t * r, const limb_t u_n, const limb_t * u, size_t n, const DivInverse & inv ) {
     limb_t R1 = u_n, R0 = u [ n - 1 ], Q;
     size_t i = n - 1;
-    if ( q != nullptr ) 
+    if ( q != nullptr )
       while ( i -- > 0 ) div_3_by_2_pre ( q [ i ], R1, R0, R1, R0, u [ i ], inv . d1, inv . d0, inv . v );
-    else 
+    else
       while ( i -- > 0 ) div_3_by_2_pre ( Q, R1, R0, R1, R0, u [ i ], inv . d1, inv . d0, inv . v );
     if ( r != nullptr ) {
       r [ 0 ] = R0;
@@ -374,20 +374,45 @@ namespace Div0 {
     }
   }
 
-  void __fastcall div_m_by_n ( limb_t * q, limb_t * u, const limb_t u_n, size_t size_u, const limb_t * d, size_t size_d, const DivInverse & inv ) {
-    
+  void __fastcall div_m_by_n ( limb_t * q, limb_t * u, size_t & size_u, const limb_t * d, size_t size_d, const DivInverse & inv ) {
+    size_t k = size_u - size_d;
+    limb_t Q, R1, R0;
+    // Сравниваем u и d*beta^k
+    size_t i = size_d;
+    while ( -- i > 0 )
+      if ( u [ i + k ] != d [ i ] )
+        break;
+    // u >= d*beta^k
+    if ( u [ i + k ] >= d [ i ] ) {
+      if ( q != nullptr ) q [ k ] = 1;
+      sub ( u + k, u + k, d, size_d );  // u -= d*beta^k
+    }
+    else if ( q != nullptr )  q [ k ] = 0;
+    while ( k -- > 0 ) {
+      size_u --;
+      limb_t u2 = u [ size_d + k ], u1 = u [ size_d + k - 1 ], u0 = u [ size_d + k - 2 ];
+      if ( u2 == inv . d1 && u1 == inv . d0 )  Q = LIMB_T_MAX;
+      else  div_3_by_2_pre ( Q, R1, R0, u2, u1, u0, inv . d1, inv . d0, inv . v );
+      limb_t borrow = submul_N_by_1 ( u + k, d, size_d, Q );  // u -= Q*d*beta^k
+      if ( borrow > u2 ) {  // Если вычли слишком много (заём больше, чем u2, который должен уничтожиться).
+        -- Q;
+        add ( u + k, u + k, d, size_d ); // u += d*beta^k
+      }
+      u [ size_d + k ] = 0; // Уничтожаем старший лимб.
+      if ( q != nullptr )  q [ k ] = Q;
+    }
   }
-  
+
 };
 
 namespace Div1 {
-  
+
   limb_t __fastcall div_n_by_1 ( limb_t * q, const limb_t u_n, const limb_t * u, size_t n, const DivInverse & inv ) {
     limb_t R = u_n, Q;
     size_t i = n;
-    if ( q != nullptr ) 
+    if ( q != nullptr )
       while ( i -- > 0 )  R = div_2_by_1 ( q [ i ], R, u [ i ], inv . d1 );
-    else 
+    else
       while ( i -- > 0 ) R = div_2_by_1 ( Q, R, u [ i ], inv . d1 );
     return R;
   }
@@ -395,9 +420,9 @@ namespace Div1 {
   void __fastcall div_n_by_2 ( limb_t * q, limb_t * r, const limb_t u_n, const limb_t * u, size_t n, const DivInverse & inv ) {
     limb_t R1 = u_n, R0 = u [ n - 1 ], Q;
     size_t i = n - 1;
-    if ( q != nullptr ) 
+    if ( q != nullptr )
       while ( i -- > 0 ) div_3_by_2 ( q [ i ], R1, R0, R1, R0, u [ i ], inv . d1, inv . d0 );
-    else 
+    else
       while ( i -- > 0 ) div_3_by_2 ( Q, R1, R0, R1, R0, u [ i ], inv . d1, inv . d0 );
     if ( r != nullptr ) {
       r [ 0 ] = R0;
@@ -420,7 +445,7 @@ static limb_t __fastcall shift_left_short ( limb_t * r, const limb_t * u, size_t
   u8 tail = LIMB_BITS - shift;
   limb_t l = * -- u;
   limb_t h = l << shift;
-  limb_t res = l >> tail;  
+  limb_t res = l >> tail;
 
   while ( -- n != 0 ) {
     l = * -- u;
@@ -437,12 +462,11 @@ static limb_t __fastcall shift_left_short ( limb_t * r, const limb_t * u, size_t
  * Результат в r[0..n-1], возвращается лимб, который должен был быть на позиции r[-1].
  * n > 0, shift > 0.
  */
-/*
 static limb_t __fastcall shift_right_short ( limb_t * r, const limb_t * u, size_t n, u8 shift ) {
   //assert ( n >= 1 && 1 <= shift && shift < LIMB_BITS );
 
   u8 tail = LIMB_BITS - shift;
-  limb_t h = * u ++;  
+  limb_t h = * u ++;
   limb_t l = h >> shift;
   limb_t res = h << tail;
 
@@ -455,7 +479,6 @@ static limb_t __fastcall shift_right_short ( limb_t * r, const limb_t * u, size_
 
   return res;
 }
-*/
 
 
 /**
@@ -469,10 +492,10 @@ static size_t __fastcall div_qr ( limb_t * q, limb_t * r, const limb_t * u, size
   limb_t * u_shifted, u_n = 0, c = limb_t ( u [ n - 1 ] < d );
   if ( inv . shift > 0 ) {
     u_shifted = new limb_t [ n ];
-    u_n = shift_left_short ( u_shifted, u, n, inv . shift );    
+    u_n = shift_left_short ( u_shifted, u, n, inv . shift );
     u = u_shifted;
   }
-  limb_t R = div_n_by_1 ( q, u_n, u, n, inv );  
+  limb_t R = div_n_by_1 ( q, u_n, u, n, inv );
   if ( inv . shift > 0 ) {
     R >>= inv . shift;
     delete [ ] u_shifted;
@@ -482,27 +505,75 @@ static size_t __fastcall div_qr ( limb_t * q, limb_t * r, const limb_t * u, size
 }
 
 /**
- * Деление m/n. Делим (u_(m-1), ..., u_0) на (d_(n-1), ..., d_0). Причём d>0.
- * m >= n >= 2.
+ * Деление n/2. Делим (u_(n-1), ..., u_0) на d=(d1, d0). Причём d>0.
+ * n > 1.
  * Результат в q, если q != nullptr, остаток в r, если r != nullptr.
  * Вернуть нормализованный размер частного.
  */
-/*static size_t __fastcall div_qr ( limb_t * q, limb_t * u, size_t size_u, const limb_t * d, size_t size_d ) {
-  limb_t tail = 0;
-  if ( size_d > 2 )  tail = d [ size_d - 2 ];
-  DivInverse inv ( d [ size_d - 1 ], d [ size_d - 1 ], tail );
-  size_t k = size_u - size_d;
-  limb_t * u_new, uh = 0 /*, c = limb_t ( u [ n - 1 ] < d )* /;
-  u_new = new limb_t [ size_u ];
-  if ( inv . shift > 0 )  uh = shift_left_short ( u_new, u, size_u, inv . shift );
-  else for ( size_t i = 0; i < size_u; i ++ ) u_new [ i ] = u [ i ];
-  u = u_new;
-  limb_t R = div_n_by_1 ( q, u_n, u, n, inv );  
+static size_t __fastcall div_qr ( limb_t * q, limb_t * r, const limb_t * u, size_t n, limb_t d1, limb_t d0 ) {
+  DivInverse inv ( d1, d0 );
+  limb_t * u_shifted, u_n = 0, c = limb_t ( u [ n - 1 ] < d1 || u [ n - 1 ] == d1 && u [ n - 2 ] < d0 ) + 1;
   if ( inv . shift > 0 ) {
-    R >>= inv . shift;
+    u_shifted = new limb_t [ n ];
+    u_n = shift_left_short ( u_shifted, u, n, inv . shift );
+    u = u_shifted;
   }
-  delete [ ] u_new;
-  if ( r != nullptr ) * r = R;
+  limb_t R1, R0;
+  div_n_by_2 ( q, r, u_n, u, n, inv );
+  if ( inv . shift > 0 ) {
+    if ( r != nullptr )
+      shift_right_short ( r, r, 2, inv . shift );
+    delete [ ] u_shifted;
+  }
   return n - c;
 }
-*/
+
+/**
+ * Деление m/n. Делим (u_(m-1), ..., u_0) на (d_(n-1), ..., d_0). Причём d>0.
+ * ?? m >= n >= 3.
+ * Результат в q, если q != nullptr, остаток в u.
+ * Вернуть нормализованный размер частного.
+ */
+static size_t __fastcall div_qr ( limb_t * q, limb_t * u, size_t & size_u, const limb_t * d, size_t size_d ) {
+  if ( size_u < size_d ) {
+    return 0;
+  }
+  if ( size_d == 1 ) {
+    size_t res = div_qr ( q, u, u, size_u, d [ 0 ] );
+    size_u = 1;
+    if ( u [ 0 ] == 0 ) size_u --;
+    return res;
+  }
+  if ( size_d == 2 ) {
+    size_t res = div_qr ( q, u, u, size_u, d [ 1 ], d [ 0 ] );
+    size_u = 2;
+    if ( u [ 1 ] == 0 ) size_u --;
+    if ( u [ 0 ] == 0 ) size_u --;
+    return res;
+  }
+
+  DivInverse inv ( d, size_d );
+  size_t k = size_u - size_d;
+  limb_t * u_shifted, u_m = 0;
+  u_shifted = new limb_t [ size_u + 1 ];
+  if ( inv . shift > 0 ) {
+    u_m = shift_left_short ( u_shifted, u, size_u, inv . shift );
+    if ( u_m )  u_shifted [ size_u ++ ] = u_m;
+    limb_t * d_shifted = new limb_t [ size_d ];
+    shift_left_short ( d_shifted, d, size_d, inv . shift );
+    d = d_shifted;
+  }
+  else for ( size_t i = 0; i < size_u; i ++ ) u_shifted [ i ] = u [ i ];
+  size_t size_q = k + 1;
+  div_m_by_n ( q, u_shifted, size_u, d, size_d, inv );
+  if ( inv . shift > 0 ) {
+    shift_right_short ( u, u_shifted, size_u, inv . shift );
+    delete [ ] d;
+  } else {
+    for ( size_t i = 0; i < size_u; i ++ ) u [ i ] = u_shifted [ i ];
+  }
+  delete [ ] u_shifted;
+  while ( size_u > 0 && u [ size_u - 1 ] == 0 ) size_u --;
+  if ( q [ size_q - 1 ] == 0 ) size_q --;
+  return size_q;
+}
