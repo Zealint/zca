@@ -331,7 +331,7 @@ bool test_vec_t() {
     a[0] = 2;
     AddMul1 (a, a, a, LIMB_MAX);
     check (a.size==2 && a[0]==0 && a[1]==2);
-    SubMul1 (a, a, a, 1);
+    SubMul1 (a, a, a, 1);//???
     check (a.IsZero());
 
     a.size = 1;

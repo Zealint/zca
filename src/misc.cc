@@ -1,3 +1,4 @@
+#include "consts.h"
 #include "misc.h"
 
 u8 __fastcall count_lz (limb_t x) {
@@ -15,3 +16,25 @@ u8 __fastcall count_lz (limb_t x) {
   if (x == 0 )  count += 1;
   return count;
 }
+
+
+
+void __fastcall copy_up (limb_t *z, const limb_t *u, size_t size) {
+  for (size_t i=0; i<size; ++i)  z[i] = u[i];
+}
+
+
+
+void __fastcall copy_down (limb_t *z, const limb_t *u, size_t size) {
+  size_t i = size;
+  while (i-- > 0)  z[i] = u[i];
+}
+
+
+
+void __fastcall make_zero (limb_t *z, size_t size) {
+  for (size_t i=0; i<size; ++i)  z[i] = 0;
+}
+
+
+

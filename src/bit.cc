@@ -2,25 +2,7 @@
 
 #include <assert.h>
 #include "bit.h"
-
-
-
-void __fastcall copy_up (limb_t *z, const limb_t *u, size_t size) {
-  for (size_t i=0; i<size; ++i)  z[i] = u[i];
-}
-
-
-
-void __fastcall copy_down (limb_t *z, const limb_t *u, size_t size) {
-  size_t i = size;
-  while (i-- > 0)  z[i] = u[i];
-}
-
-
-
-void __fastcall make_zero (limb_t *z, size_t size) {
-  for (size_t i=0; i<size; ++i)  z[i] = 0;
-}
+#include "misc.h"
 
 
 

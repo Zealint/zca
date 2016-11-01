@@ -9,21 +9,6 @@
 
 
 
-    // Copy up 'size' limbs: 'z'='u',
-    // 'z' should have enough memory. address 'u' >= address 'v'.
-void __fastcall copy_up (limb_t *z, const limb_t *u, size_t size);
-
-
-
-    // Copy down 'size' limbs: 'z'='u',
-    // 'z' should have enough memory. address 'u' <= address 'v'.
-void __fastcall copy_down (limb_t *z, const limb_t *u, size_t size);
-
-
-
-    // Make 'z' zero.
-void __fastcall make_zero (limb_t *z, size_t size);
-
 
     // Short left shift vector 'u' of size 'size_u' by 'shift' bits and put the result into 'z'.
     // 'z' should have enough memory (at least 'size_u' limbs) and 0 < 'shift' < LIMB_BITS, 'size_u'>0.
