@@ -31,31 +31,9 @@ typedef std::intptr_t offset_t;	// Signed size of a long number
 typedef i8 sign_t;	// A sign (-1, 0, 1)
 typedef size_t bitcnt_t;	// A type for bit count
 
-#include "u4.h"
-
-
-
 #ifdef LIMB_BITS
 
-#if LIMB_BITS == 4
-  typedef u4 limb_t;
-
-  const limb_t LIMB_MAX (15u);
-
-      // You can use either double-limb, or half-limb
-  #ifdef USE_DLIMB
-    typedef u8 dlimb_t;  // Double-limb
-  #else
-    #error Half-limb is not supported in case of limb_t = 8 bits. Please, undefine USE_DLIMB in "config.h"  // Half-limb
-  #endif
-
-  #ifndef LIMB_BITS_IS_DEFINED
-    #define LIMB_BITS_IS_DEFINED
-  #else
-    #error You have multiple definition of limb size. See "config.h".
-  #endif
-
-#elif LIMB_BITS == 8
+#if LIMB_BITS == 8
   typedef u8 limb_t;	// One limb
   typedef i8 slimb_t;	// Signed 'limb'
 
@@ -67,14 +45,7 @@ typedef size_t bitcnt_t;	// A type for bit count
   #ifdef USE_DLIMB
     typedef u16 dlimb_t;  // Double-limb
   #else
-    //#error Half-limb is not supported in case of limb_t = 8 bits. Please, undefine USE_DLIMB in "config.h"  // Half-limb
-    typedef u4 hlimb_t;
-  #endif
-
-  #ifndef LIMB_BITS_IS_DEFINED
-    #define LIMB_BITS_IS_DEFINED
-  #else
-    #error You have multiple definition of limb size. See "config.h".
+    #error Half-limb is not supported in case of limb_t = 8 bits. Please, undefine USE_DLIMB in "config.h"  // Half-limb
   #endif
 
 #elif LIMB_BITS == 16
@@ -91,12 +62,6 @@ typedef size_t bitcnt_t;	// A type for bit count
     typedef u8 hlimb_t;
   #endif
 
-  #ifndef LIMB_BITS_IS_DEFINED
-    #define LIMB_BITS_IS_DEFINED
-  #else
-    #error You have multiple definition of limb size. See "config.h".
-  #endif
-
 #elif LIMB_BITS == 32
   typedef u32 limb_t;
   typedef i32 slimb_t;
@@ -111,12 +76,6 @@ typedef size_t bitcnt_t;	// A type for bit count
     typedef u16 hlimb_t;
   #endif
 
-  #ifndef LIMB_BITS_IS_DEFINED
-    #define LIMB_BITS_IS_DEFINED
-  #else
-    #error You have multiple definition of limb size. See "config.h".
-  #endif
-
 #elif LIMB_BITS == 64
   typedef u64 limb_t;
   typedef i64 slimb_t;
@@ -129,12 +88,6 @@ typedef size_t bitcnt_t;	// A type for bit count
     #error Double-limb is not supported in case of limb_t = 64 bits. Please, define USE_DLIMB in "config.h"
   #else
     typedef u32 hlimb_t;
-  #endif
-
-  #ifndef LIMB_BITS_IS_DEFINED
-    #define LIMB_BITS_IS_DEFINED
-  #else
-    #error You have multiple definition of limb size. See "config.h".
   #endif
 
 #else
@@ -153,10 +106,6 @@ typedef size_t bitcnt_t;	// A type for bit count
 	const bitcnt_t HLIMB_BITS = LIMB_BITS / 2;
 #endif
 
-
-
-    // Useful constants
-//const size_t LIMB_BITS = LIMB_SIZE * 8;
 
 
 #endif

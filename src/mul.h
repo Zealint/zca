@@ -30,7 +30,7 @@ bool submul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t 
 
     // Multiply vector 'u' by vector 'v'.
     // Put the result into 'z'.
-    // &z!=&u and &z!=&v. 
+    // &z!=&u and &z!=&v.
     // size_u>0 and size_v>0. Vector 'z' should have enough memory.
     // Return size of 'z'.
 size_t mul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v);

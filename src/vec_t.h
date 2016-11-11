@@ -157,14 +157,14 @@ class vec_t {
         // Add to itself 'v'*'w'.
         // Itself should have enough memory.
         // Return constant reference to itself.
-    const vec_t & __fastcall add_mul (const vec_t &v, limb_t w);
+    const vec_t & __fastcall addmul (const vec_t &v, limb_t w);
 
 
 
         // Subtract from itself 'v'*'w'.
         // Itself >= 'v'*'w'.
         // Return constant reference to itself.
-    const vec_t & __fastcall sub_mul (const vec_t &v, limb_t w);
+    const vec_t & __fastcall submul (const vec_t &v, limb_t w);
 
 
 
@@ -206,12 +206,12 @@ class vec_t {
 
 
 
-inline const bool __fastcall operator < (const vec_t &u, const vec_t &v) { return u.Compare(v) < 0; }
-inline const bool __fastcall operator > (const vec_t &u, const vec_t &v) {  return u.Compare(v) > 0; }
-inline const bool __fastcall operator <= (const vec_t &u, const vec_t &v) {  return u.Compare(v) <= 0; }
-inline const bool __fastcall operator >= (const vec_t &u, const vec_t &v) {  return u.Compare(v) >= 0; }
-inline const bool __fastcall operator == (const vec_t &u, const vec_t &v) {  return u.Compare(v) == 0; }
-inline const bool __fastcall operator != (const vec_t &u, const vec_t &v) {  return u.Compare(v) != 0; }
+inline const bool __fastcall operator < (const vec_t &u, const vec_t &v) { return u.compare(v) < 0; }
+inline const bool __fastcall operator > (const vec_t &u, const vec_t &v) {  return u.compare(v) > 0; }
+inline const bool __fastcall operator <= (const vec_t &u, const vec_t &v) {  return u.compare(v) <= 0; }
+inline const bool __fastcall operator >= (const vec_t &u, const vec_t &v) {  return u.compare(v) >= 0; }
+inline const bool __fastcall operator == (const vec_t &u, const vec_t &v) {  return u.compare(v) == 0; }
+inline const bool __fastcall operator != (const vec_t &u, const vec_t &v) {  return u.compare(v) != 0; }
 
 
 
@@ -292,14 +292,14 @@ const vec_t & __fastcall mod (vec_t &z, const vec_t &u, const vec_t &v);
     // 'z' = 'u' + 'v'*'w'.
     // 'z' should have enough memory, 'u' and 'v' are normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall add_mul (vec_t &z, const vec_t &u, const vec_t &v, limb_t w);
+const vec_t & __fastcall addmul (vec_t &z, const vec_t &u, const vec_t &v, limb_t w);
 
 
 
     // 'z' = 'u' - 'v'*'w'.
     // 'z' should have enough memory, 'u' and 'v' are normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall sub_mul (vec_t &z, const vec_t &u, const vec_t &v, limb_t w);
+const vec_t & __fastcall submul (vec_t &z, const vec_t &u, const vec_t &v, limb_t w);
 
 
 

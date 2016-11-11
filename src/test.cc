@@ -7,13 +7,14 @@
 bool test_vec_t() {
   bool ok = true;
 
-  { // Constructors and destructor, also operator [] and IsZero()
+#if LIMB_BITS == 32
+  { // Constructors and destructor, also operator [] and is_zero()
     vec_t a;
     check (a.size==0 && a.limbs==nullptr);
-    check (a.IsZero());
+    check (a.is_zero());
     vec_t b(3);
     check (b.size==0 && b.limbs!=nullptr);
-    check (b.IsZero());
+    check (b.is_zero());
     b.size = 2;
     b[0] = 1;
     b[1] = 2;
@@ -31,45 +32,45 @@ bool test_vec_t() {
     a[0] = 1;
     a[1] = 2;
     a[2] = 3;
-    a.Adapt(2);
+    a.adapt(2);
     check (a.size==3 && a[0]==1 && a[1]==2 && a[2]==3);
-    a.Adapt(4);
+    a.adapt(4);
     check (a.size==3 && a[0]==1 && a[1]==2 && a[2]==3);
     a.size = 4;
     a[3] = 4;
     check (a.size==4 && a[0]==1 && a[1]==2 && a[2]==3 && a[3]==4);
-    a.Resize(2);
-    check (a.IsZero());
+    a.resize(2);
+    check (a.is_zero());
 	}
 
 	{ // Normalize
     vec_t a(10);
     a.size = 3;
     a[0] = a[1] = a[2] = 0;
-    check (a.Normalize()==0);
+    check (a.normalize()==0);
     check (a.size == 0);
-    check (a.IsZero());
+    check (a.is_zero());
     a.size = 3;
     a[0] = 1;
     a[1] = a[2] = 0;
-    check (a.Normalize()==1);
+    check (a.normalize()==1);
     check (a.size == 1);
-    check (!a.IsZero());
+    check (!a.is_zero());
     a.size = 3;
     a[0] = 1;
     a[1] = 2;
     a[2] = 3;
-    check (a.Normalize()==3);
+    check (a.normalize()==3);
     check (a.size == 3);
-    check (!a.IsZero());
+    check (!a.is_zero());
     a.size = 10;
     a[9] = a[8] = a[7] = 0;
     a[6] = LIMB_MAX;
-    check (a.Normalize()==7);
+    check (a.normalize()==7);
     check (a.size == 7);
 	}
 
-	{ // Operator =; also SetZero()
+	{ // Operator =; also set_zero()
     vec_t a(3), b(3);
     a.size = 3;
     a[0] = 0;
@@ -82,15 +83,15 @@ bool test_vec_t() {
     check (a.limbs != b.limbs);
     b = a+a;
     check (b.size==3 && b[0]==0 && b[1]==2 && b[2]==4);
-    a.SetZero();
-    check (a.IsZero());
+    a.set_zero();
+    check (a.is_zero());
     b = a;
-    check (b.IsZero());
+    check (b.is_zero());
   }
 
 	{ // Compare
     vec_t a(10), b(10);
-    check (b.IsZero());
+    check (b.is_zero());
     a.size = 3;
     a[0] = 1;
     a[1] = 2;
@@ -106,7 +107,7 @@ bool test_vec_t() {
     check (!(a>b));
     check (!(a<b));
 
-    b.SetZero();
+    b.set_zero();
     check (a>b);
     check (!(a<b));
     check (a>=b);
@@ -132,8 +133,8 @@ bool test_vec_t() {
     check (b>=a);
     check (!(b<=a));
 
-    a.SetZero();
-    b.SetZero();
+    a.set_zero();
+    b.set_zero();
     check (a==b);
     check (!(a!=b));
     check (!(a<b));
@@ -177,31 +178,31 @@ bool test_vec_t() {
     --a;
     check (a.size == 1 && a[0] == LIMB_MAX-1);
 
-    a.SetZero();
-    Inc (b, a, 10);
+    a.set_zero();
+    inc (b, a, 10);
     check (b.size == 1 && b[0] == 10);
-    Dec (c, b, 5);
+    dec (c, b, 5);
     check (c.size == 1 && c[0] == 5);
 
     a.size = 1;
     a[0] = LIMB_MAX-10;
-    a.Inc(11);
+    a.inc(11);
     check (a.size == 2 && a[0] == 0 && a[1] == 1);
-    a.Dec(LIMB_MAX);
+    a.dec(LIMB_MAX);
     check (a.size == 1 && a[0] == 1);
 
-    Inc (c, a, 0);
+    inc (c, a, 0);
     check (c.size == 1 && c[0] == 1);
-    Inc (c, c, 0);
+    inc (c, c, 0);
     check (c.size == 1 && c[0] == 1);
-    c.Inc(0);
+    c.inc(0);
     check (c.size == 1 && c[0] == 1);
 
-    Dec (a, c, 0);
+    dec (a, c, 0);
     check (a.size == 1 && a[0] == 1);
-    Dec (a, a, 0);
+    dec (a, a, 0);
     check (a.size == 1 && a[0] == 1);
-    c.Dec(0);
+    c.dec(0);
     check (c.size == 1 && c[0] == 1);
 
     c += LIMB_MAX;
@@ -247,19 +248,19 @@ bool test_vec_t() {
     a = a + a;
     check (a.size == 1 && a[0] == 2);
     a = a - a;
-    check (a.IsZero());
-    a.Resize(2);
+    check (a.is_zero());
+    a.resize(2);
     a.size = 1;
     a[0] = LIMB_MAX-1;
     a = a + a;
     check (a.size == 2 && a[1] == 1 && a[0] == LIMB_MAX-3);
     a = a - a;
-    check (a.IsZero());
+    check (a.is_zero());
 
-    a.Adapt(3);
+    a.adapt(3);
     a.size = 2;
     a[0] = a[1] = 1;
-    b.Adapt(3);
+    b.adapt(3);
     b.size = 2;
     b[0] = b[1] = LIMB_MAX;
     b = b + a;
@@ -279,11 +280,11 @@ bool test_vec_t() {
     a *= 1;
     check (a.size==2 && a[0]==1 && a[1]==1);
     a *= 0;
-    check (a.IsZero());
+    check (a.is_zero());
     a *= 10;
-    check (a.IsZero());
+    check (a.is_zero());
     a *= 1;
-    check (a.IsZero());
+    check (a.is_zero());
 
     a.size = 2;
     a[0] = 1;
@@ -302,7 +303,7 @@ bool test_vec_t() {
     check (a==b);
   }
 
-  { // AddMul1, SubMul1.
+  { // addmul, submul.
     vec_t a(4), b(4), c(4), d(4);
     a.size = 2;
     a[0] = 1;
@@ -310,53 +311,53 @@ bool test_vec_t() {
     b.size = 2;
     b[0] = LIMB_MAX;
     b[1] = LIMB_MAX-2;
-    AddMul1 (c, a, b, 0);
+    addmul (c, a, b, 0);
     check (c.size==2 && c[0]==1 && c[1]==2);
-    SubMul1 (c, a, b, 0);
+    submul (c, a, b, 0);
     check (c.size==2 && c[0]==1 && c[1]==2);
-    AddMul1 (c, a, b, 1);
+    addmul (c, a, b, 1);
     check (c.size==3 && c[0]==0 && c[1]==0 && c[2]==1);
-    SubMul1 (d, c, b, 1);
+    submul (d, c, b, 1);
     check (d.size==2 && d[0]==1 && d[1]==2);
-    AddMul1 (c, a, a, 3);
+    addmul (c, a, a, 3);
     check (c.size==2 && c[0]==4 && c[1]==8);
-    SubMul1 (d, c, a, 3);
+    submul (d, c, a, 3);
     check (d.size==2 && d[0]==1 && d[1]==2);
-    AddMul1 (a, b, b, 3);
+    addmul (a, b, b, 3);
     check (a.size==3 && a[0]==LIMB_MAX-3 && a[1]==LIMB_MAX-8 && a[2]==3);
-    SubMul1 (d, a, b, 3);
+    submul (d, a, b, 3);
     check (d.size==2 && d[0]==LIMB_MAX && d[1]==LIMB_MAX-2);
 
     a.size = 1;
     a[0] = 2;
-    AddMul1 (a, a, a, LIMB_MAX);
+    addmul (a, a, a, LIMB_MAX);
     check (a.size==2 && a[0]==0 && a[1]==2);
-    SubMul1 (a, a, a, 1);//???
-    check (a.IsZero());
+    submul (a, a, a, 1);//???
+    check (a.is_zero());
 
     a.size = 1;
     a[0] = 2;
     b.size = 2;
     b[0] = 1;
     b[1] = 2;
-    b.AddMul1 (a, 0);
+    b.addmul (a, 0);
     check (b.size==2 && b[0]==1 && b[1]==2);
-    b.AddMul1 (a, 5);
+    b.addmul (a, 5);
     check (b.size==2 && b[0]==11 && b[1]==2);
-    b.AddMul1 (b, 5);
+    b.addmul (b, 5);
     check (b.size==2 && b[0]==66 && b[1]==12);
-    b.SubMul1 (a, 0);
+    b.submul (a, 0);
     check (b.size==2 && b[0]==66 && b[1]==12);
-    b.SubMul1 (a, 1);
+    b.submul (a, 1);
     check (b.size==2 && b[0]==64 && b[1]==12);
-    b.SubMul1 (a, LIMB_MAX);
+    b.submul (a, LIMB_MAX);
     check (b.size==2 && b[0]==66 && b[1]==10);
 
-    a.SetZero();
-    a.AddMul1 (a, 10);
-    check (a.IsZero());
-    a.SubMul1 (a, 10);
-    check (a.IsZero());
+    a.set_zero();
+    a.addmul (a, 10);
+    check (a.is_zero());
+    a.submul (a, 10);
+    check (a.is_zero());
   }
 
   { // Mul
@@ -378,32 +379,32 @@ bool test_vec_t() {
     c[0] = 3;
     a *= c;
     check (a.size==3 && a[0]==9 && a[1]==6 && a[2]==3);
-    c.SetZero();
+    c.set_zero();
     b = a * c;
-    check (b.IsZero());
+    check (b.is_zero());
     a *= c;
-    check (a.IsZero());
+    check (a.is_zero());
   }
 
   { // Shift left and right
     vec_t a(10), b(10), c(10);
-    a.SetZero();
+    a.set_zero();
     a <<= 0;
-    check (a.IsZero());
+    check (a.is_zero());
     a <<= 1000;
-    check (a.IsZero());
+    check (a.is_zero());
     a >>= 0;
-    check (a.IsZero());
+    check (a.is_zero());
     a >>= 1000;
-    check (a.IsZero());
+    check (a.is_zero());
     c = a << 0;
-    check (c.IsZero());
+    check (c.is_zero());
     c = a << 1000;
-    check (c.IsZero());
+    check (c.is_zero());
     c = a >> 0;
-    check (c.IsZero());
+    check (c.is_zero());
     c = a >> 1000;
-    check (c.IsZero());
+    check (c.is_zero());
 
     a.size = 3;
     a[0] = 10;
@@ -457,15 +458,15 @@ bool test_vec_t() {
 
   { // Div1
     vec_t a(5), b(5);
-    a.SetZero();
+    a.set_zero();
     a /= 1;
-    check (a.IsZero());
+    check (a.is_zero());
     b = a/1;
-    check (b.IsZero());
+    check (b.is_zero());
     a /= 123;
-    check (a.IsZero());
+    check (a.is_zero());
     b = a/456;
-    check (b.IsZero());
+    check (b.is_zero());
 
     a.size = 3;
     a[0] = 3;
@@ -507,24 +508,24 @@ bool test_vec_t() {
 
   { // Mod1
     vec_t a(5), b(5);
-    a.SetZero();
+    a.set_zero();
     a %= 1;
-    check (a.IsZero());
+    check (a.is_zero());
     b = a%1;
-    check (b.IsZero());
+    check (b.is_zero());
     a %= 123;
-    check (a.IsZero());
+    check (a.is_zero());
     b = a%456;
-    check (b.IsZero());
+    check (b.is_zero());
 
     a.size = 3;
     a[0] = 3;
     a[1] = 6;
     a[2] = 9;
     b = a%3;
-    check (b.IsZero());
+    check (b.is_zero());
     a %= 3;
-    check (a.IsZero());
+    check (a.is_zero());
 
     a.size = 3;
     a[0] = 3;
@@ -532,9 +533,9 @@ bool test_vec_t() {
     a[2] = 9;
     a *= LIMB_MAX;
     b = a%LIMB_MAX;
-    check (b.IsZero());
+    check (b.is_zero());
     a %= LIMB_MAX;
-    check (a.IsZero());
+    check (a.is_zero());
 
     a.size = 3;
     a[0] = 3;
@@ -551,9 +552,9 @@ bool test_vec_t() {
     a[0] = a[1] = a[2] = LIMB_MAX;
     a *= LIMB_MAX;
     b = a%LIMB_MAX;
-    check (b.IsZero());
+    check (b.is_zero());
     a %= LIMB_MAX;
-    check (a.IsZero());
+    check (a.is_zero());
 
     a.size = 3;
     a[0] = a[1] = a[2] = LIMB_MAX;
@@ -567,11 +568,11 @@ bool test_vec_t() {
 
   { // Div, Mod
     vec_t a(10), b(10), c(10);
-    a.SetZero();
+    a.set_zero();
     b.size = 1;
     b[0] = 1;
     c = a/b;
-    check (c.IsZero());
+    check (c.is_zero());
     a.size = 1;
     a[0] = 1;
     c = a/b;
@@ -592,7 +593,7 @@ bool test_vec_t() {
     b[0] = b[1] = b[2] = 0;
     b[3] = 1;
     c = a/b;
-    check (c.IsZero());
+    check (c.is_zero());
     b.size = 2;
     b[0] = 258;
     b[1] = 369;
@@ -609,6 +610,8 @@ bool test_vec_t() {
     c = a%b;
     check (c.size==3 && c[0]==123456531 && c[1]==987653952 && c[2]==36);
   }
+
+#endif
 
 	return ok;
 }

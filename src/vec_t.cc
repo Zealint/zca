@@ -107,160 +107,136 @@ const vec_t & vec_t::sub (const vec_t &v) {
 
 
 const vec_t & __fastcall vec_t::mul (limb_t v) {
-  size = ::mul (*this, *this, v);
-  return *this;
+  return ::mul (*this, *this, v);
 }
 
 
 
 const vec_t & __fastcall vec_t::mul (const vec_t &v) {
   vec_t u (*this);
-  size = ::mul (*this, u, v);
-  return *this;
+  return ::mul (*this, u, v);
 }
 
 
 
-const vec_t & __fastcall vec_t::add_mul (const vec_t &v, limb_t w) {
-  size = ::add_mul (*this, *this, v, w);
-  return *this;
+const vec_t & __fastcall vec_t::addmul (const vec_t &v, limb_t w) {
+  return ::addmul (*this, *this, v, w);
 }
 
 
 
-const vec_t & __fastcall vec_t::sub_mul (const vec_t &v, limb_t w) {
-  assert (::sub_mul (*this, *this, v, w));
-  normalize();
-  return *this;
+const vec_t & __fastcall vec_t::submul (const vec_t &v, limb_t w) {
+  return ::submul (*this, *this, v, w);
 }
 
 
 
 const vec_t & __fastcall vec_t::div (limb_t v) {
-  size = ::div (*this, *this, v);
-  return *this;
+  return ::div (*this, *this, v);
 }
 
 
 
 const vec_t & __fastcall vec_t::mod (limb_t v) {
-  size = ::Mod (*this, *this, v);
-  return *this;
+  return ::mod (*this, *this, v);
 }
 
 
 
 const vec_t & __fastcall vec_t::div (const vec_t &v) {
   vec_t u (*this);
-  size = ::Div (*this, u, v);
-  return *this;
+  return ::div (*this, u, v);
 }
 
 
 
 const vec_t & __fastcall vec_t::mod (const vec_t &v) {
   vec_t u (*this);
-  size = ::mod (*this, u, v);
-  return *this;
+  return ::mod (*this, u, v);
 }
 
 
 
 const vec_t & __fastcall vec_t::shift_left (bitcnt_t shift) {
-  size = ::shift_left (*this, *this, shift);
-  return *this;
+  return ::shift_left (*this, *this, shift);
 }
 
 
 
 const vec_t & __fastcall vec_t::shift_right (bitcnt_t shift) {
-  size = ::shift_right (*this, *this, shift);
-  return *this;
+  return ::shift_right (*this, *this, shift);
 }
 
 
 
 const vec_t & vec_t::operator += (limb_t v) {
-  size = ::inc(v);
-  return *this;
+  return inc(v);
 }
 
 
 
 const vec_t & vec_t::operator += (const vec_t &v) {
-  size = add(v);
-  return *this;
+  return add(v);
 }
 
 
 
 const vec_t & vec_t::operator -= (const vec_t &v) {
-  assert (::sub(v));
-  normalize();
-  return *this;
+  return sub(v);
 }
 
 
 
 const vec_t & vec_t::operator -= (limb_t v) {
-  assert (::dec(v));
-  return *this;
+  return dec(v);
 }
 
 
 
 const vec_t & vec_t::operator *= (limb_t v) {
-  size = ::mul(v);
-  return *this;
+  return mul(v);
 }
 
 
 
 const vec_t & vec_t::operator *= (const vec_t &v) {
-  size = ::mul(v);
-  return *this;
+  return mul(v);
 }
 
 
 
 const vec_t & vec_t::operator /= (limb_t v) {
-  size = ::div(v);
-  return *this;
+  return div(v);
 }
 
 
 
 const vec_t & vec_t::operator %= (limb_t v) {
-  size = mod(v);
-  return *this;
+  return mod(v);
 }
 
 
 
 const vec_t & vec_t::operator /= (const vec_t &v) {
-  size = ::div(v);
-  return *this;
+  return div(v);
 }
 
 
 
 const vec_t & vec_t::operator %= (const vec_t &v) {
-  size = ::mod(v);
-  return *this;
+  return mod(v);
 }
 
 
 
 const vec_t & __fastcall vec_t::operator <<= (bitcnt_t shift) {
-  size = ::shift_left (shift);
-  return *this;
+  return shift_left (shift);
 }
 
 
 
 const vec_t & __fastcall vec_t::operator >>= (bitcnt_t shift) {
-  size = ::shift_right (shift);
-  return *this;
+  return shift_right (shift);
 }
 
 
@@ -302,12 +278,12 @@ const vec_t & __fastcall sub (vec_t &z, const vec_t &u, const vec_t &v) {
   else  is_correct = ::sub (z.limbs, u.limbs, u.size, v.limbs, v.size); // Not in-place.
   assert (is_correct);
   z.size = u.size;
-  z.zormalize();
+  z.normalize();
   return z;
 }
 
 
-???
+
 const vec_t & __fastcall mul (vec_t &z, const vec_t &u, limb_t v) {
   if (u.size==0 || v==0)  z.set_zero();
   else if (v==1) { if (&z != &u)  z = u; }
@@ -317,9 +293,9 @@ const vec_t & __fastcall mul (vec_t &z, const vec_t &u, limb_t v) {
 
 
 
-const vec_t & __fastcall AddMul1 (vec_t &z, const vec_t &u, const vec_t &v, limb_t w) {
-  if (u.size == 0)  return Mul1 (z, v, w);
-  if (w == 1)  return Add (z, u, v);
+const vec_t & __fastcall addmul (vec_t &z, const vec_t &u, const vec_t &v, limb_t w) {
+  if (u.size == 0)  return mul (z, v, w);
+  if (w == 1)  return add (z, u, v);
   if (v.size==0 || w==0) {
     if (&z != &u)  z = u;	// Copy without memory allocation.
   } else {
@@ -330,44 +306,43 @@ const vec_t & __fastcall AddMul1 (vec_t &z, const vec_t &u, const vec_t &v, limb
 
 
 
-const vec_t & __fastcall SubMul1 (vec_t &z, const vec_t &u, const vec_t &v, limb_t w) {
-  if (w == 1)  return Sub (z, u, v);
+const vec_t & __fastcall submul (vec_t &z, const vec_t &u, const vec_t &v, limb_t w) {
+  if (w == 1)  return sub (z, u, v);
   if (v.size==0 || w==0) {
     if (&z != &u)  z = u;	// Copy without memory allocation.
   } else {
-    bool is_correct = ::submul (z.limbs, u.limbs, u.size, v.limbs, v.size, w);
-    assert (is_correct);
+    assert (::submul (z.limbs, u.limbs, u.size, v.limbs, v.size, w));
     z.size = u.size;
-    z.Normalize();
+    z.normalize();
   }
   return z;
 }
 
 
 
-const vec_t & __fastcall Mul (vec_t &z, const vec_t &u, const vec_t &v) {
-  if (u.size==0 || v.size==0)  z.SetZero();
-  else if (u.size == 1)  return Mul1 (z, v, u[0]);
-  else if (v.size == 1)  return Mul1 (z, u, v[0]);
+const vec_t & __fastcall mul (vec_t &z, const vec_t &u, const vec_t &v) {
+  if (u.size==0 || v.size==0)  z.set_zero();
+  else if (u.size == 1)  return mul (z, v, u[0]);
+  else if (v.size == 1)  return mul (z, u, v[0]);
   else z.size = ::mul (z.limbs, u.limbs, u.size, v.limbs, v.size);
   return z;
 }
 
 
 
-const vec_t & Div1 (vec_t &z, const vec_t &u, limb_t v) {
-  assert (v!=0);
-  if (u.size==0)  z.SetZero();
-  else if (v==1) { if (&z != &u)  z = u; }
+const vec_t & __fastcall div (vec_t &z, const vec_t &u, limb_t v) {
+  assert (v !=0 );
+  if (u.size == 0)  z.set_zero();
+  else if (v == 1) { if (&z != &u)  z = u; }
   else z.size = ::div_qr (z.limbs, nullptr, u.limbs, u.size, v);
   return z;
 }
 
 
 
-const vec_t & Mod1 (vec_t &z, const vec_t &u, limb_t v) {
-  assert (v!=0);
-  if (u.size==0 || v==1)  z.SetZero();
+const vec_t & __fastcall mod (vec_t &z, const vec_t &u, limb_t v) {
+  assert (v != 0);
+  if (u.size==0 || v==1)  z.set_zero();
   else {
     ::div_qr (nullptr, z.limbs, u.limbs, u.size, v);
     z.size = (size_t)(z[0]!=0);
@@ -377,9 +352,9 @@ const vec_t & Mod1 (vec_t &z, const vec_t &u, limb_t v) {
 
 
 
-const vec_t & __fastcall Div (vec_t &z, const vec_t &u, const vec_t &v) {
-  assert (!v.IsZero());
-  if (u.size==0)  z.SetZero();
+const vec_t & __fastcall div (vec_t &z, const vec_t &u, const vec_t &v) {
+  assert (!v.is_zero());
+  if (u.size == 0)  z.set_zero();
   else {
     vec_t r(u);
     z.size = ::div_qr (z.limbs, r.limbs, r.size, v.limbs, v.size);
@@ -389,9 +364,9 @@ const vec_t & __fastcall Div (vec_t &z, const vec_t &u, const vec_t &v) {
 
 
 
-const vec_t & __fastcall Mod (vec_t &z, const vec_t &u, const vec_t &v) {
-  assert (!v.IsZero());
-  if (u.size==0)  z.SetZero();
+const vec_t & __fastcall mod (vec_t &z, const vec_t &u, const vec_t &v) {
+  assert (!v.is_zero());
+  if (u.size == 0)  z.set_zero();
   else {
     z = u;
     vec_t tmp(u); // !!! nullptr doesn't work.
@@ -402,16 +377,16 @@ const vec_t & __fastcall Mod (vec_t &z, const vec_t &u, const vec_t &v) {
 
 
 
-const vec_t & __fastcall ShiftLeft (vec_t &z, const vec_t &u, bitcnt_t shift) {
-  if (u.size == 0)  z.SetZero();
+const vec_t & __fastcall shift_left (vec_t &z, const vec_t &u, bitcnt_t shift) {
+  if (u.size == 0)  z.set_zero();
   else  z.size = ::shift_left_long (z.limbs, u.limbs, u.size, shift);
   return z;
 }
 
 
 
-const vec_t & __fastcall ShiftRight (vec_t &z, const vec_t &u, bitcnt_t shift) {
-  if (u.size == 0)  z.SetZero();
+const vec_t & __fastcall shift_right (vec_t &z, const vec_t &u, bitcnt_t shift) {
+  if (u.size == 0)  z.set_zero();
   else  z.size = ::shift_right_long (z.limbs, u.limbs, u.size, shift);
   return z;
 }
@@ -419,27 +394,27 @@ const vec_t & __fastcall ShiftRight (vec_t &z, const vec_t &u, bitcnt_t shift) {
 
 
 const vec_t & __fastcall vec_t::operator ++ () {
-  return Inc(1);
+  return inc(1);
 }
 
 
 
 const vec_t & __fastcall vec_t::operator -- () {
-  return Dec(1);
+  return dec(1);
 }
 
 
 
 const vec_t __fastcall operator + (const vec_t &u, const vec_t &v) {
   vec_t z (max (u.size, v.size) + 1);
-  return Add (z, u, v);
+  return add (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator + (const vec_t &u, limb_t v) {
   vec_t z (u.size + 1);
-  return Inc (z, u, v);
+  return inc (z, u, v);
 }
 
 
@@ -447,69 +422,69 @@ const vec_t __fastcall operator + (const vec_t &u, limb_t v) {
 const vec_t __fastcall operator - (const vec_t &u, const vec_t &v) {
   assert (u.size >= v.size);
   vec_t z (u.size);
-  return Sub (z, u, v);
+  return sub (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator - (const vec_t &u, limb_t v) {
-  assert (v==0||u.size>0);
+  assert (v==0 || u.size>0);
   vec_t z (u.size);
-  return Dec (z, u, v);
+  return dec (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator * (const vec_t &u, const vec_t &v) {
   vec_t z (u.size+v.size);
-  return Mul (z, u, v);
+  return mul (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator * (const vec_t &u, limb_t v) {
   vec_t z (u.size+1);
-  return Mul1 (z, u, v);
+  return mul (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator / (const vec_t &u, limb_t v) {
   vec_t z (u.size);
-  return Div1 (z, u, v);
+  return div (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator % (const vec_t &u, limb_t v) {
-  vec_t z (1);
-  return Mod1 (z, u, v);
+  vec_t z(1);
+  return mod (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator / (const vec_t &u, const vec_t &v) {
   vec_t z (u.size);
-  return Div (z, u, v);
+  return div (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator % (const vec_t &u, const vec_t &v) {
   vec_t z (u.size);
-  return Mod (z, u, v);
+  return mod (z, u, v);
 }
 
 
 
 const vec_t __fastcall operator << (const vec_t &u, bitcnt_t shift) {
   vec_t z (u.size + (shift+LIMB_BITS-1)/LIMB_BITS);
-  return ShiftLeft (z, u, shift);
+  return shift_left (z, u, shift);
 }
 
 
 
 const vec_t __fastcall operator >> (const vec_t &u, bitcnt_t shift) {
   vec_t z (u.size + shift/LIMB_BITS);
-  return ShiftRight (z, u, shift);
+  return shift_right (z, u, shift);
 }
