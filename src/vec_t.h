@@ -5,9 +5,7 @@
 
 #pragma once
 
-#include "consts.h"
-#include "add.h"
-#include "sub.h"
+#include "typedef.h"
 
 
 
@@ -30,33 +28,33 @@ class vec_t {
         // Resize 'limbs'.
         // It doesn't copy old limbs to new. ALL data will be cleared.
         // Vector becomes zero.
-    void __fastcall Resize (size_t s);
+    void __fastcall resize (size_t s);
 
 
 
         // Adapt 'limbs' to new size 's'.
         // Nothing is changed if 'size' >= 's'.
-    void __fastcall Adapt (size_t s);
+    void __fastcall adapt (size_t s);
 
 
 
 				// Normalize vector size.
 				// Return normalized size.
-    size_t __fastcall Normalize();
+    size_t __fastcall normalize();
 
 
 
     		// Compare with other vector with the same size.
     		// Both vectors are normalized, 'size'='that.size' and 'size'>0.
     		// Return the result of comparison as 'sign_t'.
-    sign_t __fastcall CompareEqualSize (const vec_t &that) const;
+    sign_t __fastcall compare_equal_size (const vec_t &that) const;
 
 
 
     		// Compare with other vector.
     		// Both vectors are normalized.
     		// Return the result of comparison as 'sign_t'.
-    sign_t __fastcall Compare (const vec_t &that) const;
+    sign_t __fastcall compare (const vec_t &that) const;
 
 
 
@@ -81,106 +79,106 @@ class vec_t {
 
 
         // Check if vector is zero
-    bool __fastcall IsZero() const { return size == 0; }
+    bool __fastcall is_zero() const { return size == 0; }
 
 
 
         // Set vector to zero
-    void __fastcall SetZero() { size = 0; }
+    void __fastcall set_zero() { size = 0; }
 
 
 
         // Add to itself limb 's'.
         // Enough memory for itself should be allocated.
         // Return constant reference to itself.
-    const vec_t & __fastcall Inc (limb_t s);
+    const vec_t & __fastcall inc (limb_t s);
 
 
 
         // Add to itself vector 'v'.
         // Enough memory for itself should be allocated.
         // Return constant reference to itself.
-    const vec_t & __fastcall Add (const vec_t &v);
+    const vec_t & __fastcall add (const vec_t &v);
 
 
 
         // Subtract from itself limb 's'.
         // Itself >= 's'.
         // Return constant reference to itself.
-    const vec_t & __fastcall Dec (limb_t s);
+    const vec_t & __fastcall dec (limb_t s);
 
 
 
         // Subtract from itself vector 'v'.
         // Itself >= 'v'.
         // Return constant reference to itself.
-    const vec_t & __fastcall Sub (const vec_t &v);
+    const vec_t & __fastcall sub (const vec_t &v);
 
 
 
         // Multiply itself by limb 'v'.
         // Itself should have enough memory.
         // Return constant reference to itself.
-    const vec_t & __fastcall Mul1 (limb_t v);
+    const vec_t & __fastcall mul (limb_t v);
 
 
 
         // Multiply itself by vector 'v'.
         // Itself should have enough memory.
         // Return constant reference to itself.
-    const vec_t & __fastcall Mul (const vec_t &v);
+    const vec_t & __fastcall mul (const vec_t &v);
 
 
 
         // Divide itself by limb 'v'.
         // Return constant reference to itself.
-    const vec_t & __fastcall Div1 (limb_t v);
+    const vec_t & __fastcall div (limb_t v);
 
 
 
         // Reminder of division itself by limb 'v'.
         // Return constant reference to itself.
-    const vec_t & __fastcall Mod1 (limb_t v);
+    const vec_t & __fastcall mod (limb_t v);
 
 
 
         // Divide itself by vector 'v'.
         // Return constant reference to itself.
-    const vec_t & __fastcall Div (const vec_t &v);
+    const vec_t & __fastcall div (const vec_t &v);
 
 
 
         // Reminder of division itself by vector 'v'.
         // Return constant reference to itself.
-    const vec_t & __fastcall Mod (const vec_t &v);
+    const vec_t & __fastcall mod (const vec_t &v);
 
 
 
         // Add to itself 'v'*'w'.
         // Itself should have enough memory.
         // Return constant reference to itself.
-    const vec_t & __fastcall AddMul1 (const vec_t &v, limb_t w);
+    const vec_t & __fastcall add_mul (const vec_t &v, limb_t w);
 
 
 
         // Subtract from itself 'v'*'w'.
         // Itself >= 'v'*'w'.
         // Return constant reference to itself.
-    const vec_t & __fastcall SubMul1 (const vec_t &v, limb_t w);
+    const vec_t & __fastcall sub_mul (const vec_t &v, limb_t w);
 
 
 
         // Shift itself left by 'shift' bits.
         // Itself should have enough memory and is normalized.
         // Return constant reference to itself.
-    const vec_t & __fastcall ShiftLeft (bitcnt_t shift);
+    const vec_t & __fastcall shift_left (bitcnt_t shift);
 
 
 
         // Shift itself right by 'shift' bits.
         // Itself is normalized.
         // Return constant reference to itself.
-    const vec_t & __fastcall ShiftRight (bitcnt_t shift);
+    const vec_t & __fastcall shift_right (bitcnt_t shift);
 
 
 
@@ -221,7 +219,7 @@ inline const bool __fastcall operator != (const vec_t &u, const vec_t &v) {  ret
     // 'z' should have enough memory space, 'u' is normalized.
     // Based on functions from "add.cc".
     // Return constant reference to 'z'.
-const vec_t & __fastcall Inc (vec_t &z, const vec_t &u, limb_t s);
+const vec_t & __fastcall inc (vec_t &z, const vec_t &u, limb_t s);
 
 
 
@@ -229,7 +227,7 @@ const vec_t & __fastcall Inc (vec_t &z, const vec_t &u, limb_t s);
     // 'z' should have enough memory space, 'u' and 'v' are normalized.
     // Based on functions from "add.cc".
     // Return constant reference to 'z'.
-const vec_t & __fastcall Add (vec_t &z, const vec_t &u, const vec_t &v);
+const vec_t & __fastcall add (vec_t &z, const vec_t &u, const vec_t &v);
 
 
 
@@ -237,7 +235,7 @@ const vec_t & __fastcall Add (vec_t &z, const vec_t &u, const vec_t &v);
     // 'u'>='s', 'u' is normalized.
     // Based on functions from "sub.cc".
     // Return constant reference to 'z'.
-const vec_t & __fastcall Dec (vec_t &z, const vec_t &u, limb_t s);
+const vec_t & __fastcall dec (vec_t &z, const vec_t &u, limb_t s);
 
 
 
@@ -245,77 +243,77 @@ const vec_t & __fastcall Dec (vec_t &z, const vec_t &u, limb_t s);
     // 'u'>='v', 'z' should have enough memory space, 'u' and 'v' are normalized..
     // Based on functions from "sub.cc".
     // Return constant reference to 'z'.
-const vec_t & __fastcall Sub (vec_t &z, const vec_t &u, const vec_t &v);
+const vec_t & __fastcall sub (vec_t &z, const vec_t &u, const vec_t &v);
 
 
 
     // 'z' = 'u'*'v'.
     // 'z' should have enough memory, 'u' is normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall Mul1 (vec_t &z, const vec_t &u, limb_t v);
+const vec_t & __fastcall mul (vec_t &z, const vec_t &u, limb_t v);
 
 
 
     // 'z' = 'u'*'v'.
     // '&z' != '&u', '&z' != '&v', 'z' should have enough memory, 'u' and 'v' are normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall Mul (vec_t &z, const vec_t &u, const vec_t &v);
+const vec_t & __fastcall mul (vec_t &z, const vec_t &u, const vec_t &v);
 
 
 
     // 'z' = 'u'/'v'.
     // 'u' is normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall Div1 (vec_t &z, const vec_t &u, limb_t v);
+const vec_t & __fastcall div (vec_t &z, const vec_t &u, limb_t v);
 
 
 
     // 'z' = 'u' mod 'v'.
     // 'u' is normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall Mod1 (vec_t &z, const vec_t &u, limb_t v);
+const vec_t & __fastcall mod (vec_t &z, const vec_t &u, limb_t v);
 
 
 
     // 'z' = 'u'/'v'.
     // '&z' != '&u', '&z' != '&v', 'z' should have enough memory, 'u' and 'v' are normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall Div (vec_t &z, const vec_t &u, const vec_t &v);
+const vec_t & __fastcall div (vec_t &z, const vec_t &u, const vec_t &v);
 
 
 
     // 'z' = 'u'%'v'.
     // '&z' != '&u', '&z' != '&v', 'z' should have enough memory, 'u' and 'v' are normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall Mod (vec_t &z, const vec_t &u, const vec_t &v);
+const vec_t & __fastcall mod (vec_t &z, const vec_t &u, const vec_t &v);
 
 
 
     // 'z' = 'u' + 'v'*'w'.
     // 'z' should have enough memory, 'u' and 'v' are normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall AddMul1 (vec_t &z, const vec_t &u, const vec_t &v, limb_t w);
+const vec_t & __fastcall add_mul (vec_t &z, const vec_t &u, const vec_t &v, limb_t w);
 
 
 
     // 'z' = 'u' - 'v'*'w'.
     // 'z' should have enough memory, 'u' and 'v' are normalized.
     // Return constant reference to 'z'.
-const vec_t & __fastcall SubMul1 (vec_t &z, const vec_t &u, const vec_t &v, limb_t w);
+const vec_t & __fastcall sub_mul (vec_t &z, const vec_t &u, const vec_t &v, limb_t w);
 
 
 
     // 'z' = 'u' << shift.
     // 'u' is normalized and 'z' should have enough memory.
     // Return constant reference to 'z'.
-const vec_t & __fastcall ShiftLeft (vec_t &z, const vec_t &u, bitcnt_t shift);
+const vec_t & __fastcall shift_left (vec_t &z, const vec_t &u, bitcnt_t shift);
 
 
 
     // 'z' = 'u' >> shift.
     // 'u' is normalized and 'z' should have enough memory.
     // Return constant reference to 'z'.
-const vec_t & __fastcall ShiftRight (vec_t &z, const vec_t &u, bitcnt_t shift);
+const vec_t & __fastcall shift_right (vec_t &z, const vec_t &u, bitcnt_t shift);
 
 
 

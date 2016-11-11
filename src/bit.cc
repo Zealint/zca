@@ -1,6 +1,5 @@
 // Low-level bit operations
 
-#include <assert.h>
 #include "bit.h"
 #include "misc.h"
 

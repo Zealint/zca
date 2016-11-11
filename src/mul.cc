@@ -1,21 +1,21 @@
-// High-level multiplication.
-// A description to the function is written in mul.h file.
+// High-level multiplication. A description to the function is written in mul.h file.
 
 #include "add.h"
+#include "add_low.h"
 #include "sub.h"
 #include "misc.h"
 #include "mul.h"
 
 
 
-limb_t __fastcall mul_N_by_M (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v) {
-  limb_t s = mul_N_by_1 (z, u, size_u, *v, 0);
+limb_t __fastcall mul_n_by_m (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v) {
+	assert (size_u>0 && size_v>0);
+  limb_t s = mul_n_by_1 (z, u, size_u, *v, 0);
   z[size_u] = s;
-  const limb_t *w = v;
   while (--size_v > 0) {
     ++v;
     ++z;
-    s = addmul_N_by_1 (z, z, u, size_u, *v);
+    s = addmul_n_by_1 (z, z, u, size_u, *v);
     z[size_u] = s;
   }
   return s;
@@ -23,40 +23,52 @@ limb_t __fastcall mul_N_by_M (limb_t *z, const limb_t *u, size_t size_u, const l
 
 
 
-size_t mul1 (limb_t *z, const limb_t *u, size_t size, limb_t v) {
-  limb_t carry = mul_N_by_1 (z, u, size, v, 0);
+size_t mul (limb_t *z, const limb_t *u, size_t size, limb_t v) {
+	assert (can_copy_up (z, u, size));
+	limb_t carry = 0;
+	if (size > 0)  carry = mul_n_by_1 (z, u, size, v);
   if (carry)  z[size++] = carry;
   return size;
 }
 
 
 
-size_t addmul1 (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v, limb_t w) {
-  limb_t carry;
-  size_t size;
+size_t addmul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v, limb_t w) {
+	assert (can_copy_up (z, u, size_u));
+	assert (can_copy_up (z, v, size_v));
+  limb_t carry = 0;
+  size_t size_z;
   if (size_u >= size_v) {
-    carry = addmul_N_by_1 (z, u, v, size_v, w);
-    if (size_u > size_v)  carry = add (z + size_v, u + size_v, size_u - size_v, carry);
-    size = size_u;
+  	if (size_v > 0)  carry = addmul_n_by_1 (z, u, v, size_v, w);
+    if (size_u > size_v)  carry = add (z+size_v, u+size_v, size_u-size_v, carry);
+    size_z = size_u;
   } else {
-    carry = addmul_N_by_1 (z, u, v, size_u, w);
-    carry = mul_N_by_1 (z + size_u, v + size_u, size_v - size_u, w, carry);
-    size = size_v;
+  	if (size_u > 0)  carry = addmul_n_by_1 (z, u, v, size_u, w);
+    carry = mul_n_by_1 (z+size_u, v+size_u, size_v-size_u, w, carry);
+    size_z = size_v;
   }
-  if (carry)  z[size++] = carry;
-  return size;
+  if (carry)  z[size_z++] = carry;
+  return size_z;
 }
 
 
 
-bool submul1 (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v, limb_t w) {
-  limb_t borrow = submul_N_by_1 (z, u, v, size_v, w);
-  if (size_u > size_v)  borrow = sub (z + size_v, u + size_v, size_u - size_v, borrow);
+bool submul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v, limb_t w) {
+	assert (can_copy_up (z, u, size_u));
+	assert (can_copy_up (z, v, size_v));
+	assert (size_u >= size_v);
+  limb_t borrow = 0;
+  if (size_v > 0)  borrow = submul_n_by_1 (z, u, v, size_v, w);
+  if (size_u > size_v)  borrow = sub (z+size_v, u+size_v, size_u-size_v, borrow);
   return borrow == 0;
 }
 
 
 size_t mul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v) {
-  limb_t carry = mul_N_by_M (z, u, size_u, v, size_v);
-  return size_u + size_v - size_t(carry == 0);
+	assert (z>=u+size_u || z+size_u+size_v<=u);
+	assert (z>=v+size_v || z+size_u+size_v<=v);
+  limb_t carry;
+  if (size_u>0 && size_v>0)  carry = mul_n_by_m (z, u, size_u, v, size_v);
+  else  return 0;
+  return size_u+size_v - (carry==0);
 }
