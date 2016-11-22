@@ -5,12 +5,15 @@
 #include "misc.h"	// swap
 
 
-
+//#include <stdio.h>
 size_t __fastcall inc (limb_t *z, limb_t *u, size_t size_u, limb_t s) {
   assert (can_copy_up (z, u, size_u));
+  //printf ("%x(%u) %x\n", u[0], size_u, s);
   limb_t carry = s;
   if (size_u > 0)  carry = add (z, u, size_u, carry);
+  //printf ("z[0]=%x carry=%u\n", z[0], carry);
   if (carry)  z[size_u++] = carry;
+  //printf ("z[0]=%x z[1]=%u, size_u=%u\n", z[0], z[1], size_u);
   return size_u;
 }
 

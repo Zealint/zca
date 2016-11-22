@@ -23,11 +23,10 @@ limb_t __fastcall mul_n_by_m (limb_t *z, const limb_t *u, size_t size_u, const l
 
 
 
-size_t mul (limb_t *z, const limb_t *u, size_t size, limb_t v) {
+size_t mul (limb_t *z, const limb_t *u, size_t size, limb_t v, limb_t c) {
 	assert (can_copy_up (z, u, size));
-	limb_t carry = 0;
-	if (size > 0)  carry = mul_n_by_1 (z, u, size, v);
-  if (carry)  z[size++] = carry;
+	if (size > 0)  c = mul_n_by_1 (z, u, size, v, c);
+  if (c)  z[size++] = c;
   return size;
 }
 

@@ -9,7 +9,6 @@
 
 
 
-
     // Short left shift vector 'u' of size 'size_u' by 'shift' bits and put the result into 'z'.
     // 'z' should have enough memory (at least 'size_u' limbs) and 0 < 'shift' < LIMB_BITS, 'size_u'>0.
     // Return 'z[size_u]' (without actually writing it).

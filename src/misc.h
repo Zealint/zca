@@ -29,15 +29,31 @@ inline T __fastcall min (T a, T b) {
 
 
 
-inline size_t __fastcall abs (offset_t a) {
-  if (a < 0)  a = -a;
-  return (size_t) a;
+template <typename T>
+inline T __fastcall abs (const T &a) {
+  if (a < 0)  return -a;
+  return a;
 }
 
 
 
-inline sign_t __fastcall sign (offset_t a) {
-  return sign_t (a > 0) - sign_t (a < 0);
+/*inline size_t __fastcall abs (offset_t a) {
+  if (a < 0)  a = -a;
+  return (size_t) a;
+}*/
+
+
+
+/*inline limb_t __fastcall abs (slimb_t a) {
+  if (a < 0)  a = -a;
+  return (limb_t) a;
+}*/
+
+
+
+template <typename T>
+inline sign_t __fastcall sign (T a) {
+  return sign_t (a>0) - sign_t (a<0);
 }
 
 
@@ -51,6 +67,10 @@ u8 __fastcall count_lz (u8 x);
 u8 __fastcall count_lz (u16 x);
 u8 __fastcall count_lz (u32 x);
 u8 __fastcall count_lz (u64 x);
+
+
+
+inline bool __fastcall is_power_of_2 (limb_t a) { return a>0 && (a&(a-1)) == 0; }
 
 
 
@@ -225,7 +245,6 @@ void __fastcall div_3_by_2_d (T &q, T &r1, T &r0, T u2, T u1, T u0, T d1, T d0) 
     // 'HT' - integral data type which is half of 'T'
 template <typename T, typename HT>
 T __fastcall div_2_by_1_h (T &q, T u1, T u0, T d) {
-  const bitcnt_t H_BITS = sizeof (T) * 4;
   HT u1h, u1l, u0h, u0l, d1, d0, qh, ql, r1, r0;
   split<T, HT> (u1h, u1l, u1);
   split<T, HT> (u0h, u0l, u0);
@@ -251,7 +270,17 @@ T __fastcall div_2_by_1_d (T &q, T u1, T u0, T d) {
 
 
 
-size_t normalize_size (const limb_t *a, size_t n);
+size_t __fastcall normalize_size (const limb_t *a, size_t n);
 
+
+
+char __fastcall char_by_digit (u8);
+u8 __fastcall digit_by_char (char);
+bool __fastcall is_digit (u8, u8=10U);
+
+
+
+char * __fastcall to_string (char *, const limb_t *u, size_t size_u, u8=10U);
+size_t __fastcall from_string (limb_t *z, const char *str, u8=10U);
 
 #endif

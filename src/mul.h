@@ -13,10 +13,10 @@
     // Return the value z[size_u+size_v-1].
 limb_t __fastcall mul_n_by_m (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v);
 
-    // Multiply vector U={u, size_u} by limb v and put the result into Z={z, size_z}.
+    // Multiply vector U={u, size_u} by limb v, add limb c and put the result into Z={z, size_z}.
     // Z should have enough allocated memory and U is normalized.
     // Return size_z.
-size_t mul (limb_t *z, const limb_t *u, size_t size, limb_t v);
+size_t mul (limb_t *z, const limb_t *u, size_t size, limb_t v, limb_t c=0);
 
     // Calculate Z = U + V*w, when U and V may have different sizes.
     // Vectors U and V are normalized, Z should have enough allocated memory.

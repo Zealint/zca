@@ -66,8 +66,9 @@ size_t __fastcall shift_right_long (limb_t *z, const limb_t *u, size_t size_u, b
   assert (size_u > 0);
   size_t long_shift = shift/LIMB_BITS;
   u8 short_shift = shift%LIMB_BITS;
+  if (size_u <= long_shift)  return 0;
   if (short_shift > 0)  shift_right_short (z, u+long_shift, size_u-long_shift, short_shift);
-  else  copy_up (z+long_shift, u, size_u);
+  else  copy_up (z, u+long_shift, size_u);
   size_t size_z = size_u - long_shift;
   if (size_z>0 && z[size_z-1]==0)  --size_z;
   return size_z;

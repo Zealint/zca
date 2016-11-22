@@ -144,6 +144,21 @@ static u8 __fastcall normalize_divisor (limb_t &d1, limb_t &d0, const limb_t &ta
 
 
 size_t __fastcall div_qr (limb_t *q, limb_t *r, const limb_t *u, size_t n, limb_t d) {
+  assert (n!=0 && d!=0);
+  assert (q != r);
+  if (is_power_of_2(d)) {
+    if (d == 1) {
+      if (q != nullptr)  copy_up (q, u, n);
+      if (r != nullptr)  *r = 0;
+      return q != nullptr ? n : 0;
+    }
+    const u8 shift = LIMB_BITS-1-count_lz(d);
+    limb_t R = u[0] & (((limb_t)1<<shift)-1);
+    if (q != nullptr)  shift_right_short (q, u, n, shift);
+    if (r != nullptr)  *r = R;
+    if (q != nullptr)  return normalize_size (q, n);
+    return 0;
+  }
   limb_t *u_shifted, u_n=0;
   size_t c=0;
   if ((limb_t)u[n-1]<d)
@@ -199,13 +214,17 @@ size_t __fastcall div_qr (limb_t *q, limb_t *r, const limb_t *u, size_t n, limb_
 size_t __fastcall div_qr (limb_t *q, limb_t *u, size_t &size_u, const limb_t *d, size_t size_d) {
   if (size_u < size_d)  return 0;
   if (size_d == 1) {
-    size_t res = div_qr (q, u, u, size_u, d[0]);
-    size_u = 1;
-    if (u[0] == 0)  --size_u;
+    limb_t r;
+    size_t res = div_qr (q, &r, u, size_u, d[0]);
+    if (r != 0) { u[0] = r;  size_u = 1; }
+    else size_u = 0;
     return res;
   }
   if (size_d == 2) {
-    size_t res = div_qr (q, u, u, size_u, d[1], d[0]);
+    limb_t r[2];
+    size_t res = div_qr (q, r, u, size_u, d[1], d[0]);
+    u[0] = r[0];
+    u[1] = r[1];
     size_u = 2;
     while (size_u>0 && u[size_u-1] == 0)  --size_u;
     return res;
