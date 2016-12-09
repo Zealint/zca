@@ -23,6 +23,22 @@ typedef std::uint16_t u16;
 typedef std::uint32_t u32;
 typedef std::uint64_t u64;
 
+const i8 I8_MAX = INT8_MAX;
+const i8 I8_MIN = INT8_MIN;
+const u8 U8_MAX = UINT8_MAX;
+
+const i16 I16_MAX = INT16_MAX;
+const i16 I16_MIN = INT16_MIN;
+const u16 U16_MAX = UINT16_MAX;
+
+const i32 I32_MAX = INT32_MAX;
+const i32 I32_MIN = INT32_MIN;
+const u32 U32_MAX = UINT32_MAX;
+
+const i64 I64_MAX = INT64_MAX;
+const i64 I64_MIN = INT64_MIN;
+const u64 U64_MAX = UINT64_MAX;
+
 
 
     // Definitions of data types for long numbers
@@ -106,6 +122,8 @@ typedef size_t bitcnt_t;	// A type for bit count
 	const bitcnt_t HLIMB_BITS = LIMB_BITS / 2;
 #endif
 
+const limb_t HIGH_BIT_MASK = (limb_t)(1) << (LIMB_BITS-1);
 
+//const size_t LIMBS_IN_U64 = 64 / LIMB_BITS;
 
 #endif

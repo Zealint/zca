@@ -1,80 +1,76 @@
-// Low-level subtraction in usual case. A description to the functions is written in sub_low.h file.
+// Low-level subtraction. A description to the functions is written in sub_low.h file.
 // If 'USE_ASM' is defined then this file isn't used.
 
 #include "sub_low.h"
 
 #ifndef USE_ASM
 
-
-
-limb_t __fastcall sub (limb_t *z, const limb_t *u, size_t size_u, limb_t s) {
-	assert (size_u > 0);
+limb_t __fastcall dec (limb_t *c, const limb_t *a, size_t size_a, limb_t b) {
+	assert (size_a > 0);
 #ifdef USE_DLIMB
-  dlimb_t t = (dlimb_t)s;
-  for (size_t i=0; i<size_u; ++i) {
-    t = (dlimb_t)u[i] - t;
-    z[i] = (limb_t)t;
-    t >>= DLIMB_BITS - 1;
+  dlimb_t s = (dlimb_t)b;
+  for (size_t i=0; i<size_a; ++i) {
+    s = (dlimb_t)a[i] - s;
+    c[i] = (limb_t)s;
+    s >>= DLIMB_BITS - 1;
   }
-  s = (limb_t)t;
+  b = (limb_t)s;
 #else
-  for (size_t i=0; i<size_u; ++i) {
-    limb_t t = u[i];
-    z[i] = t - s;
-    s = (t<s);	// Borrow detection.
+  for (size_t i=0; i<size_a; ++i) {
+    limb_t s = a[i];
+    c[i] = s - b;
+    b = (s<b);	// Borrow detection.
   }
 #endif
-  return s;
+  return b;
 }
 
 
 
-limb_t __fastcall sub (limb_t *u, size_t size_u, limb_t s) {
-	assert (size_u > 0);
+limb_t __fastcall dec (limb_t *a, size_t size_a, limb_t b) {
+	assert (size_a > 0);
 	// The trick is that if borrow is zero, then we can stop.
 #ifdef USE_DLIMB
-  dlimb_t t = (dlimb_t)s;
-  for (size_t i=0; t>0 && i<size_u; ++i) {
-    t = (dlimb_t)u[i] - t;
-    u[i] = (limb_t)t;
-    t >>= DLIMB_BITS - 1;
+  dlimb_t s = (dlimb_t)b;
+  for (size_t i=0; s>0 && i<size_a; ++i) {
+    s = (dlimb_t)a[i] - s;
+    a[i] = (limb_t)s;
+    s >>= DLIMB_BITS - 1;
   }
-  s = (limb_t)t;
+  b = (limb_t)s;
 #else
-  for (size_t i=0; s>0 && i<size_u; ++i) {
-    limb_t t = u[i];
-    u[i] = t - s;
-    s = (t<s);
+  for (size_t i=0; b>0 && i<size_a; ++i) {
+    limb_t s = a[i];
+    a[i] = s - b;
+    b = (s<b);
   }
 #endif
-  return s;
+  return b;
 }
 
 
 
-limb_t __fastcall sub (limb_t *z, const limb_t *u, const limb_t *v, size_t size) {
+limb_t __fastcall sub (limb_t *c, const limb_t *a, const limb_t *b, size_t size) {
   assert (size > 0);
 #ifdef USE_DLIMB
   dlimb_t s = 0;
   for (size_t i=0; i<size; ++i) {
-    s = (dlimb_t)u[i] - s;
-    s -= v[i];
-    z[i] = (limb_t)s;
+    s = (dlimb_t)a[i] - s;
+    s -= b[i];
+    c[i] = (limb_t)s;
     s >>= DLIMB_BITS - 1;
   }
   return (limb_t)s;
 #else
   limb_t borrow = 0;
   for (size_t i=0; i<size; ++i) {
-    limb_t s = u[i];
-    limb_t t = v[i] + borrow;
+    limb_t s = a[i];
+    limb_t t = b[i] + borrow;
     borrow = (s<t) || (t<borrow);	// Only one condition is true, so borrow <= 1 always.
-    z[i] = s - t;
+    c[i] = s - t;
   }
   return borrow;
 #endif
 }
-
-
 
 #endif

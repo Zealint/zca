@@ -4,35 +4,28 @@
 #define MUL_H
 #pragma once
 
-#include "mul_low.h"
+#include "typedef.h"
 
-    // Multiply vector U={u, size_u} by vector V={v, size_v} by a trivial algorithm.
-    // Put the result into Z={z, size_u+size_v}.
-    // Z, U and V cannot overlap.
-    // size_u>0 and size_v>0. Vector Z should have enough allocated memory (at least size_u+size_v limbs).
-    // Return the value z[size_u+size_v-1].
-limb_t __fastcall mul_n_by_m (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v);
+    // Multiply vector A={a, size_a} by limb b, add limb s (s=0 by default) and put the result into C={c, size_c}.
+    // C should have enough allocated memory and A is normalized.
+    // Return size_c.
+size_t mul (limb_t *c, const limb_t *a, size_t size_a, limb_t b, limb_t s=0);
 
-    // Multiply vector U={u, size_u} by limb v, add limb c and put the result into Z={z, size_z}.
-    // Z should have enough allocated memory and U is normalized.
-    // Return size_z.
-size_t mul (limb_t *z, const limb_t *u, size_t size, limb_t v, limb_t c=0);
+    // Calculate C = A + B*s.
+    // Vectors A and B are normalized, C should have enough allocated memory.
+    // Return size of C.
+size_t addmul (limb_t *c, const limb_t *a, size_t size_a, const limb_t *b, size_t size_b, limb_t s);
 
-    // Calculate Z = U + V*w, when U and V may have different sizes.
-    // Vectors U and V are normalized, Z should have enough allocated memory.
-    // Return size of Z.
-size_t addmul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v, limb_t w);
+    // Calculate C = A - B*s.
+    // Vectors A and B are normalized, C should have enough allocated memory, also A >= B*s.
+    // Return size of C.
+size_t submul (limb_t *c, const limb_t *a, size_t size_a, const limb_t *b, size_t size_b, limb_t s);
 
-    // Calculate Z = U - V*w, when U and V may have different sizes.
-    // Vectors U and V are normalized, Z should have enough allocated memory, also size_u >= size_v.
-    // Return size of Z.
-bool submul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v, limb_t w);
-
-    // Multiply vector 'u' by vector 'v'.
-    // Put the result into 'z'.
-    // &z!=&u and &z!=&v.
-    // size_u>0 and size_v>0. Vector 'z' should have enough memory.
-    // Return size of 'z'.
-size_t mul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v);
+    // Multiply vector A by vector B.
+    // Put the result into C.
+    // C cannot overlap with A or B. 
+    // Vector C should have enough memory.
+    // Return size of C.
+size_t mul (limb_t *c, const limb_t *a, size_t size_a, const limb_t *b, size_t size_b);
 
 #endif

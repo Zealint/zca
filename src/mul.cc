@@ -1,73 +1,67 @@
-// High-level multiplication. A description to the function is written in mul.h file.
+// High-level vector multiplication. A description to the function is written in mul.h file.
 
-#include "add.h"
 #include "add_low.h"
+#include "add.h"
+#include "sub_low.h"
 #include "sub.h"
-#include "misc.h"
+#include "mul_low.h"
 #include "mul.h"
+#include "misc.h"
 
 
 
-limb_t __fastcall mul_n_by_m (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v) {
-	assert (size_u>0 && size_v>0);
-  limb_t s = mul_n_by_1 (z, u, size_u, *v, 0);
-  z[size_u] = s;
-  while (--size_v > 0) {
-    ++v;
-    ++z;
-    s = addmul_n_by_1 (z, z, u, size_u, *v);
-    z[size_u] = s;
-  }
-  return s;
+size_t mul (limb_t *c, const limb_t *a, size_t size_a, limb_t b, limb_t s) {
+	assert (can_copy_up (c, a, size_a));
+	assert (is_normalized (a, size_a));
+	if (size_a > 0)  s = mul_n_by_1 (c, a, size_a, b, s);
+  if (s>0)  c[size_a++] = s;
+  return size_a;
 }
 
 
 
-size_t mul (limb_t *z, const limb_t *u, size_t size, limb_t v, limb_t c) {
-	assert (can_copy_up (z, u, size));
-	if (size > 0)  c = mul_n_by_1 (z, u, size, v, c);
-  if (c)  z[size++] = c;
-  return size;
-}
-
-
-
-size_t addmul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v, limb_t w) {
-	assert (can_copy_up (z, u, size_u));
-	assert (can_copy_up (z, v, size_v));
+size_t addmul (limb_t *c, const limb_t *a, size_t size_a, const limb_t *b, size_t size_b, limb_t s) {
+	assert (can_copy_up (c, a, size_a));
+	assert (can_copy_up (c, b, size_b));
+	assert (is_normalized (a, size_a));
+	assert (is_normalized (b, size_b));
   limb_t carry = 0;
-  size_t size_z;
-  if (size_u >= size_v) {
-  	if (size_v > 0)  carry = addmul_n_by_1 (z, u, v, size_v, w);
-    if (size_u > size_v)  carry = add (z+size_v, u+size_v, size_u-size_v, carry);
-    size_z = size_u;
+  size_t size_c;
+  if (size_a >= size_b) {
+  	if (size_b > 0)  carry = addmul_n_by_1 (c, a, b, size_b, s);
+    if (size_a > size_b)  carry = inc (c+size_b, a+size_b, size_a-size_b, carry);
+    size_c = size_a;
   } else {
-  	if (size_u > 0)  carry = addmul_n_by_1 (z, u, v, size_u, w);
-    carry = mul_n_by_1 (z+size_u, v+size_u, size_v-size_u, w, carry);
-    size_z = size_v;
+  	if (size_a > 0)  carry = addmul_n_by_1 (c, a, b, size_a, s);
+    carry = mul_n_by_1 (c+size_a, b+size_a, size_b-size_a, s, carry);
+    size_c = size_b;
   }
-  if (carry)  z[size_z++] = carry;
-  return size_z;
+  if (carry)  c[size_c++] = carry;
+  return size_c;
 }
 
 
 
-bool submul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v, limb_t w) {
-	assert (can_copy_up (z, u, size_u));
-	assert (can_copy_up (z, v, size_v));
-	assert (size_u >= size_v);
+size_t submul (limb_t *c, const limb_t *a, size_t size_a, const limb_t *b, size_t size_b, limb_t s) {
+	assert (can_copy_up (c, a, size_a));
+	assert (can_copy_up (c, b, size_b));
+	assert (size_a >= size_b);
+	assert (is_normalized (a, size_a));
+	assert (is_normalized (b, size_b));
   limb_t borrow = 0;
-  if (size_v > 0)  borrow = submul_n_by_1 (z, u, v, size_v, w);
-  if (size_u > size_v)  borrow = sub (z+size_v, u+size_v, size_u-size_v, borrow);
-  return borrow == 0;
+  if (size_b > 0)  borrow = submul_n_by_1 (c, a, b, size_b, s);
+  if (size_a > size_b)  borrow = dec (c+size_b, a+size_b, size_a-size_b, borrow);
+  return normalize_size (c, size_a);
 }
 
 
-size_t mul (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v) {
-	assert (z>=u+size_u || z+size_u+size_v<=u);
-	assert (z>=v+size_v || z+size_u+size_v<=v);
-  limb_t carry;
-  if (size_u>0 && size_v>0)  carry = mul_n_by_m (z, u, size_u, v, size_v);
+size_t mul (limb_t *c, const limb_t *a, size_t size_a, const limb_t *b, size_t size_b) {
+	assert (c>=a+size_a || c+size_a+size_b<=a);
+	assert (c>=b+size_b || c+size_a+size_b<=b);
+	assert (is_normalized (a, size_a));
+	assert (is_normalized (b, size_b));
+  limb_t carry = 0;
+  if (size_a>0 && size_b>0)  carry = mul_n_by_m (c, a, size_a, b, size_b);
   else  return 0;
-  return size_u+size_v - (carry==0);
+  return size_a+size_b - (carry==0);
 }

@@ -37,20 +37,6 @@ inline T __fastcall abs (const T &a) {
 
 
 
-/*inline size_t __fastcall abs (offset_t a) {
-  if (a < 0)  a = -a;
-  return (size_t) a;
-}*/
-
-
-
-/*inline limb_t __fastcall abs (slimb_t a) {
-  if (a < 0)  a = -a;
-  return (limb_t) a;
-}*/
-
-
-
 template <typename T>
 inline sign_t __fastcall sign (T a) {
   return sign_t (a>0) - sign_t (a<0);
@@ -58,15 +44,19 @@ inline sign_t __fastcall sign (T a) {
 
 
 
-bool __fastcall can_copy_up (const limb_t *z, const limb_t *u, size_t size);
-
-
-
-    // Counting leading zeros.
+    // Counting leading zeroes.
 u8 __fastcall count_lz (u8 x);
 u8 __fastcall count_lz (u16 x);
 u8 __fastcall count_lz (u32 x);
 u8 __fastcall count_lz (u64 x);
+inline u8 __fastcall count_lz (i32 x) { return count_lz ((u32)x) ; }
+
+
+
+    // Counting a position of the highest one bit in 'a'.
+    // Return unsigned '-1' if a==0.
+template <typename T>
+bitcnt_t __fastcall pos_of_high_one (T a) { return (bitcnt_t)sizeof(T)*8-1 - count_lz(a); }
 
 
 
@@ -74,38 +64,43 @@ inline bool __fastcall is_power_of_2 (limb_t a) { return a>0 && (a&(a-1)) == 0; 
 
 
 
-    // Copy up 'size' limbs: z=u,
-    // Vector 'z' should have enough memory. &u >= &v.
-void __fastcall copy_up (limb_t *z, const limb_t *u, size_t size);
+bool __fastcall can_copy_up (const limb_t *c, const limb_t *a, size_t size);
 
 
 
-    // Copy down 'size' limbs: z=u,
-    // Vector 'z' should have enough memory. &u <= &v.
-void __fastcall copy_down (limb_t *z, const limb_t *u, size_t size);
+    // Copy up 'size' limbs: c=a,
+    // Vector 'c' should have enough memory.
+void __fastcall copy_up (limb_t *c, const limb_t *a, size_t size);
+
+    // Copy down 'size' limbs: c=a,
+    // Vector 'c' should have enough memory.
+void __fastcall copy_down (limb_t *c, const limb_t *a, size_t size);
 
 
 
-    // Make vector 'z' of size 'size' zero: z=0.
-void __fastcall make_zero (limb_t *z, size_t size);
+    // Make vector 'c' of size 'size' zero: c[0..size-1]=0.
+void __fastcall set_zero (limb_t *c, size_t size);
+
+    // Make each cell of vector 'c' of size 'size' of value v: c[0..size-1]=v.
+void __fastcall set_value (limb_t *c, size_t size, limb_t v);
 
 
 
-    // Make double value (u1, u0) from single values u1 and u0.
+    // Make double value (a1, a0) from single values a1 and a0.
 template <typename T, typename DT>
-DT __fastcall glue (T u1, T u0) {
-	const u8 BITS = sizeof(DT) * 4;
-  return ((DT)u1<<BITS) | u0;
+DT __fastcall glue (T a1, T a0) {
+	const u8 BITS = sizeof(T) * 8;
+  return ((DT)a1<<BITS) | a0;
 }
 
 
 
-    // Split value 'u' by high and low parts of half data type.
+    // Split value 'a' by high and low parts of half data type.
 template <typename T, typename HT>
-void __fastcall split (HT &h, HT &l, T u) {
-	const u8 BITS = sizeof(T) * 4;
-  h = (HT)(u >> BITS);
-  l = (HT)u;
+void __fastcall split (HT &h, HT &l, T a) {
+	const u8 BITS = sizeof(HT) * 8;
+  h = (HT)(a >> BITS);
+  l = (HT)a;
 }
 
 
@@ -117,24 +112,24 @@ HT __fastcall get_hi (T u) { HT h, l;  split<T, HT> (h, l, u);  return h; }
 
 
 
-template <typename T> bool __fastcall is_less_or_equal (T u1, T u0, T v1, T v0) { return u1<v1 || (u1==v1&&u0<=v0); }
-template <typename T> bool __fastcall is_less (T u1, T u0, T v1, T v0) { return u1<v1 || (u1==v1&&u0<v0); }
+template <typename T> bool __fastcall is_less_or_equal (T a1, T a0, T b1, T b0) { return a1<b1 || (a1==b1&&a0<=b0); }
+template <typename T> bool __fastcall is_less (T a1, T a0, T b1, T b0) { return a1<b1 || (a1==b1&&a0<b0); }
 
 
 
 template <typename T>
-void __fastcall add_lo_hi (T &u1, T &u0, T v1, T v0) {
-	T t = u0 + v0;
-	u1 += v1 + (t<u0);
-	u0 = t;
+void __fastcall add_lo_hi (T &a1, T &a0, T b1, T b0) {
+	T t = a0 + b0;
+	a1 += b1 + (t<a0);
+	a0 = t;
 }
 
 
 
 template <typename T>
-void __fastcall sub_lo_hi (T &u1, T &u0, T v1, T v0) {
-	u1 -= v1 + (u0<v0);
-	u0 -= v0;
+void __fastcall sub_lo_hi (T &a1, T &a0, T b1, T b0) {
+	a1 -= b1 + (a0<b0);
+	a0 -= b0;
 }
 
 
@@ -271,6 +266,7 @@ T __fastcall div_2_by_1_d (T &q, T u1, T u0, T d) {
 
 
 size_t __fastcall normalize_size (const limb_t *a, size_t n);
+bool __fastcall is_normalized (const limb_t *a, size_t n);
 
 
 
@@ -282,5 +278,54 @@ bool __fastcall is_digit (u8, u8=10U);
 
 char * __fastcall to_string (char *, const limb_t *u, size_t size_u, u8=10U);
 size_t __fastcall from_string (limb_t *z, const char *str, u8=10U);
+
+// How many limbs do we need to keep d-digit number in the given base?
+size_t how_many_limbs (size_t d, u8 base=10u);
+
+// How many digits are there in the number, written in the string in given base?
+// Returns at least 1.
+size_t how_many_digits (const char *str, u8 base=10u);
+
+template <typename T>
+size_t limbs_in_() {
+  assert (sizeof (T) >= sizeof (limb_t));
+  return sizeof (T) / sizeof (limb_t);
+}
+
+template <typename T>
+bool fit_into_one_limb () { return sizeof (T) <= sizeof (limb_t); }
+
+
+
+template <typename T>
+size_t size_in_limbs (T a) {
+  if (fit_into_one_limb<T>())  return 1;
+  if ((limb_t)a == a)  return 1;
+  if ((dlimb_t)a == a)  return 2;
+  return limbs_in_<T>();
+}
+
+
+
+template <typename T, typename S>
+void __fastcall split (limb_t *limbs, S &size, T a) {
+  if (a == 0)  size = 0;
+  else if (fit_into_one_limb<T>())  { *limbs = (limb_t)a;  size = 1; }
+  else {
+    const size_t bound = limbs_in_<T>();
+    for (size=0; a>0 && (size_t)size<bound; ++size) {
+      limbs[size] = (limb_t)a;
+      a >>= LIMB_BITS;	// Here in 'else' block LIMB_BITS is less than size in bits of 'a'.
+    }
+  }
+  assert (normalize_size (limbs, (size_t)size) == (size_t)size);
+}
+
+
+
+inline bitcnt_t length_in_bits (const limb_t *a, size_t n) {
+  if (n == 0)  return 0;
+  return (bitcnt_t)n*LIMB_BITS - count_lz (a[n-1]);
+}
 
 #endif

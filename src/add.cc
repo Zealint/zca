@@ -1,67 +1,66 @@
-// High-level addition. A description to the function is written in add.h file.
+// High-level vector addition. A description to the function is written in add.h file.
 
-#include "add.h"
 #include "add_low.h"
-#include "misc.h"	// swap
+#include "add.h"
+#include "misc.h"
 
 
-//#include <stdio.h>
-size_t __fastcall inc (limb_t *z, limb_t *u, size_t size_u, limb_t s) {
-  assert (can_copy_up (z, u, size_u));
-  //printf ("%x(%u) %x\n", u[0], size_u, s);
-  limb_t carry = s;
-  if (size_u > 0)  carry = add (z, u, size_u, carry);
-  //printf ("z[0]=%x carry=%u\n", z[0], carry);
-  if (carry)  z[size_u++] = carry;
-  //printf ("z[0]=%x z[1]=%u, size_u=%u\n", z[0], z[1], size_u);
-  return size_u;
+
+size_t __fastcall add (limb_t *c, limb_t *a, size_t size_a, limb_t b) {
+  assert (can_copy_up (c, a, size_a));
+  assert (is_normalized (a, size_a));
+  limb_t carry = b;
+  if (size_a > 0)  carry = inc (c, a, size_a, carry);
+  if (carry)  c[size_a++] = carry;
+  return size_a;
 }
 
 
 
-size_t __fastcall inc (limb_t *u, size_t size_u, limb_t s) {
-	limb_t carry = s;
-	if (size_u > 0)  carry = add (u, size_u, carry);
-  if (carry)  u[size_u++] = carry;
-  return size_u;
+size_t __fastcall add (limb_t *a, size_t size_a, limb_t b) {
+	assert (is_normalized (a, size_a));
+	limb_t carry = b;
+	if (size_a > 0)  carry = inc (a, size_a, carry);
+  if (carry)  a[size_a++] = carry;
+  return size_a;
 }
 
 
 
-size_t __fastcall add (limb_t *z, const limb_t *u, size_t size_u, const limb_t *v, size_t size_v) {
-	assert (can_copy_up (z, u, size_u) && can_copy_up (z, v, size_v));
-  // If size of 'u' less than size of 'v', swap them to avoid symmetric case.
-  if (size_u < size_v) {
-    swap (size_u, size_v);
-    swap (u, v);
+size_t __fastcall add (limb_t *c, const limb_t *a, size_t size_a, const limb_t *b, size_t size_b) {
+	assert (can_copy_up (c, a, size_a) && can_copy_up (c, b, size_b));
+	assert (is_normalized (a, size_a));
+	assert (is_normalized (b, size_b));
+  // If size of 'a' less than size of 'b', swap them to avoid symmetric case.
+  if (size_a < size_b) {
+    swap (size_a, size_b);
+    swap (a, b);
   }
   limb_t carry = 0;
-  if (size_v > 0)  carry = add (z, u, v, size_v);	// Add {u, size_v}+{v, size_v} (equal length), 'cause size_v<size_u.
-  if (size_u > size_v)  carry = add (z+size_v, u+size_v, size_u-size_v, carry);	// Add 'tail' of u.
-  if (carry)  z[size_u++] = carry;
-  return size_u;
+  if (size_a > 0)  carry = add (c, a, b, size_b);	// Add {a, size_b}+{b, size_b} (equal length), 'cause size_b<=size_a.
+  if (size_a > size_b)  carry = inc (c+size_b, a+size_b, size_a-size_b, carry);	// Add 'tail' of a.
+  if (carry)  c[size_a++] = carry;
+  return size_a;
 }
 
 
 
-size_t __fastcall add (limb_t *u, size_t size_u, const limb_t *v, size_t size_v) {
-	assert (can_copy_up (u, v, size_v));
-  // If size_u less than size_v then we have to copy 'tail' of v into u (if no carry when add common parts).
+size_t __fastcall add (limb_t *a, size_t size_a, const limb_t *b, size_t size_b) {
+	assert (can_copy_up (a, b, size_b));
+	assert (is_normalized (a, size_a));
+	assert (is_normalized (b, size_b));
+  // If size_a less than size_b then we have to copy 'tail' of b into a (if no carry when add common parts).
   limb_t carry = 0;
-  if (size_u < size_v) {
-    if (size_u > 0)  carry = add (u, u, v, size_u);	// {u, size_u} += {v, size_u}, 'cause size_u<size_v.
-    if (carry) {
-      carry = add (u+size_u, v+size_u, size_v-size_u, carry);	// Add carry to the 'tail' of v.
-    } else {
-    	copy_up (u+size_u, v+size_u, size_v-size_u);	// Here we can just copy 'tail' of v.
-    	carry = 0;
-    }
-    if (carry)  u[size_v++] = carry;
-    return size_v;
+  if (size_a < size_b) {
+    if (size_a > 0)  carry = add (a, a, b, size_a);	// {a, size_a} += {b, size_a}, 'cause size_a<size_b.
+    if (carry)  carry = inc (a+size_a, b+size_a, size_b-size_a, carry);	// Add carry to the 'tail' of b.
+    else  copy_up (a+size_a, b+size_a, size_b-size_a);	// Here we can just copy 'tail' of v.
+    if (carry)  a[size_b++] = carry;
+    return size_b;
   }
   // Here size_u >= size_v.
-  if (size_v > 0)  carry = add (u, u, v, size_v);
-  if (size_u > size_v)  carry = add (u+size_v, size_u-size_v, carry);	// in-place addition.
-  if (carry)  u[size_u++] = carry;
-  return size_u;
+  if (size_b > 0)  carry = add (a, a, b, size_b);
+  if (size_a > size_b)  carry = inc (a+size_b, size_a-size_b, carry);	// in-place addition.
+  if (carry)  a[size_a++] = carry;
+  return size_a;
 }

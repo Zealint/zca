@@ -1,3 +1,4 @@
+#include <cmath>
 #include "typedef.h"
 #include "add.h"
 #include "div.h"
@@ -62,9 +63,24 @@ void __fastcall copy_down (limb_t *z, const limb_t *u, size_t size) {
 
 
 
-void __fastcall make_zero (limb_t *z, size_t size) {
-  for (size_t i=0; i<size; ++i)  z[i] = 0;
+void __fastcall set_zero (limb_t *a, size_t size) {
+  assert (size > 0);
+  for (size_t i=0; i<size; ++i)  a[i] = 0;
 }
+
+void __fastcall set_value (limb_t *a, size_t size, limb_t v) {
+  assert (size > 0);
+  for (size_t i=0; i<size; ++i)  a[i] = v;
+}
+
+/*
+bool __fastcall is_equal (const limb_t *a, const limb_t* b, size_t size) {
+  assert (size > 0);
+  for (size_t i=0; i<size; ++i)  if (a[i] != b[i])  return false;
+  return true;
+}
+*/
+
 
 
 
@@ -72,6 +88,8 @@ size_t normalize_size (const limb_t *a, size_t n) {
   while (n>0 && a[n-1]==0)  --n;
   return n;
 }
+
+bool __fastcall is_normalized (const limb_t *a, size_t n) { return n==0 || a[n-1]!=0; }
 
 
 char __fastcall char_by_digit (u8 d) {
@@ -146,5 +164,22 @@ size_t __fastcall from_string (limb_t *z, const char *str, u8 base) {
     }
   }
   return size;
+}
+
+size_t how_many_limbs (size_t d, u8 base) {
+	// !!! It is wrong (too many) !!!
+	return (size_t)ceil(log((double)base)/log(pow(2.0, LIMB_BITS)) * d);
+}
+
+size_t how_many_digits (const char *str, u8 base) {
+  //sign_t s = 1;
+  while (*str == '0')  ++str;	// Remove leading zeroes.
+	//if (*str == '-')  s = -1;
+  if (*str=='-' || *str=='+')  ++str;	// Remove possible unary plus or minus.
+  size_t d=0;	// How many digits do we have?
+  while (is_digit(str[d], base))  ++d;
+  d += (d==0);	// In case of d=0 we will have d=1.
+	//return s>0 ? d : -d;
+	return d;
 }
 

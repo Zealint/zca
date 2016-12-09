@@ -54,7 +54,7 @@ size_t __fastcall shift_left_long (limb_t *z, const limb_t *u, size_t size_u, bi
   limb_t carry = 0;
   if (short_shift > 0)  carry = shift_left_short (z+long_shift, u, size_u, short_shift);
   else  copy_down (z+long_shift, u, size_u);
-  make_zero (z, long_shift);
+  set_zero (z, long_shift);
   size_t size_z = size_u + long_shift;
   if (carry)  z[size_z++] = carry;
   return size_z;
