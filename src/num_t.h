@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "misc.h"
 #include "typedef.h"
+#include "misc.h"
 #include "vec_t.h"
 
 
@@ -27,12 +27,12 @@ num_t & __fastcall sub (num_t &, const num_t &, const num_t &);
 template <typename T> inline num_t & __fastcall sub (num_t &c, const num_t &a, T b);
 num_t & __fastcall mul (num_t &, const num_t &, const num_t &);
 template <typename T> inline num_t & __fastcall mul (num_t &c, const num_t &a, T b);
-num_t & __fastcall div_qr (num_t *, num_t *, const num_t &, const num_t &);
-template <typename T> inline T __fastcall div_qr (num_t *q, const num_t &a, T b);
-template <typename T> inline num_t & __fastcall div (num_t &q, const num_t &a, T b);
-template <typename T> inline T __fastcall mod (const num_t &a, T b);
-num_t & __fastcall div (num_t &c, const num_t &a, const num_t &b);
-num_t & __fastcall mod (num_t &c, const num_t &a, const num_t &b);
+num_t & __fastcall div_qr (num_t *, num_t *, const num_t &, const num_t &, DivisionMode=DM_EUCLIDEAN);
+template <typename T> inline T __fastcall div_qr (num_t *q, const num_t &a, T b, DivisionMode=DM_EUCLIDEAN);
+template <typename T> inline num_t & __fastcall div (num_t &q, const num_t &a, T b, DivisionMode=DM_EUCLIDEAN);
+template <typename T> inline T __fastcall mod (const num_t &a, T b, DivisionMode=DM_EUCLIDEAN);
+num_t & __fastcall div (num_t &c, const num_t &a, const num_t &b, DivisionMode=DM_EUCLIDEAN);
+num_t & __fastcall mod (num_t &c, const num_t &a, const num_t &b, DivisionMode=DM_EUCLIDEAN);
 num_t & __fastcall addmul (num_t &c, const num_t &a, const num_t &b, limb_t s);
 num_t & __fastcall submul (num_t &c, const num_t &a, const num_t &b, limb_t s);
 num_t & __fastcall shift_left (num_t &c, const num_t &a, bitcnt_t shift);
@@ -141,9 +141,9 @@ class num_t {
     // Convert vector to built-in data type.
     template <typename T> __fastcall operator T() const {
       if (is_zero())  return 0;
-      sign_t s = this->sign();
+      sign_t s = sign();
       T res = 0;
-      if (sizeof(T) >= sizeof(limb_t))  for (size_t i=0; i<size && i<sizeof(T)/sizeof(limb_t); ++i)  res |= ((T)limbs[i]<<(LIMB_BITS*i));
+      if (sizeof(T) > sizeof(limb_t))  for (size_t i=0; i<size && i<sizeof(T)/sizeof(limb_t); ++i)  res |= ((T)limbs[i]<<(LIMB_BITS*i));
       else res = (T)limbs[0];
       return s>0 ? res : -res;
     }
@@ -190,13 +190,12 @@ class num_t {
 
 
     num_t & __fastcall neg() { size = -size;  return *this; }
-
     num_t __fastcall operator - () const { num_t c(*this);  return c.neg(); }
 
     num_t & __fastcall from_string (const char *, u8=10U);
     char * __fastcall to_string (char *, u8=10U) const;
 
-            // Arithmetic functions
+        // Arithmetic functions
         // Itself is normalized for all these functions
         // Reference to itself is returned by all these functions except modulo by built-in type
 
@@ -206,14 +205,14 @@ class num_t {
     template <typename T> num_t & __fastcall add (T a) { return ::add (*this, *this, a); }
     template <typename T> num_t & __fastcall sub (T a) { return ::sub (*this, *this, a); }
     template <typename T> num_t & __fastcall mul (T a) { return ::mul (*this, *this, a); }
-    template <typename T> num_t & __fastcall div (T a) { return ::div (*this, *this, a); }
-    template <typename T> T __fastcall mod (T a) { T r = ::mod (*this, a);  *this = r;  return r; }
+    template <typename T> num_t & __fastcall div (T a, DivisionMode dm=DM_EUCLIDEAN) { return ::div (*this, *this, a, dm); }
+    template <typename T> T __fastcall mod (T a, DivisionMode dm=DM_EUCLIDEAN) { T r = ::mod (*this, a, dm);  *this = r;  return r; }
 
     num_t & __fastcall add (const num_t &a) { return ::add (*this, *this, a); }
     num_t & __fastcall sub (const num_t &a) { return ::sub (*this, *this, a); }
     num_t & __fastcall mul (const num_t &a) { return ::mul (*this, *this, a); }
-    num_t & __fastcall div (const num_t &a) { return ::div (*this, *this, a); }
-    num_t & __fastcall mod (const num_t &a) { return ::mod (*this, *this, a); }
+    num_t & __fastcall div (const num_t &a, DivisionMode dm=DM_EUCLIDEAN) { return ::div (*this, *this, a, dm); }
+    num_t & __fastcall mod (const num_t &a, DivisionMode dm=DM_EUCLIDEAN) { return ::mod (*this, *this, a, dm); }
 
     num_t & __fastcall addmul (const num_t &a, limb_t b) { return ::addmul (*this, *this, a, b); }
     num_t & __fastcall submul (const num_t &a, limb_t b) { return ::submul (*this, *this, a, b); }
@@ -300,7 +299,7 @@ inline num_t & __fastcall inc (num_t &c, const num_t &a, limb_t b) {
   if (a.size >= 0) {
     if (c.limbs == a.limbs)  c.size = (offset_t)::add (a.limbs, (size_t)a.size, b); // In-place (++a).
     else  c.size = (offset_t)::add (c.limbs, a.limbs, (size_t)a.size, b); // Not in-place (c=a+1).
-  } else  diff (c, vec_t(a), b).neg();
+  } else  { vec_t A(a);  diff (c, A, b).neg();  A.detach(); }
   return c;
 }
 
@@ -309,13 +308,13 @@ inline num_t & __fastcall dec (num_t &c, const num_t &a, limb_t b) {
   if (a.size < 0) {
     if (c.limbs == a.limbs)  c.size = -(offset_t)::add (a.limbs, (size_t)(-a.size), b); // In-place (--a).
     else  c.size = -(offset_t)::add (c.limbs, a.limbs, (size_t)(-a.size), b); // Not in-place (c=a-1).
-  } else  diff (c, vec_t(a), b);
+  } else { vec_t A(a);  diff (c, A, b);  A.detach(); }
   return c;
 }
 
 
 
-num_t & __fastcall add (num_t &, const num_t &, const num_t &);
+//num_t & __fastcall add (num_t &, const num_t &, const num_t &);
 
 template <typename T>
 inline num_t & __fastcall add (num_t &c, const num_t &a, T b) {
@@ -328,7 +327,7 @@ inline num_t & __fastcall add (num_t &c, const num_t &a, T b) {
 
 
 
-num_t & __fastcall sub (num_t &, const num_t &, const num_t &);
+//num_t & __fastcall sub (num_t &, const num_t &, const num_t &);
 
 template <typename T>
 inline num_t & __fastcall sub (num_t &c, const num_t &a, T b) {
@@ -339,7 +338,7 @@ inline num_t & __fastcall sub (num_t &c, const num_t &a, T b) {
   return c;
 }
 
-num_t & __fastcall mul (num_t &, const num_t &, const num_t &);
+//num_t & __fastcall mul (num_t &, const num_t &, const num_t &);
 
 template <typename T>
 inline num_t & __fastcall mul (num_t &c, const num_t &a, T b) {
@@ -352,41 +351,85 @@ inline num_t & __fastcall mul (num_t &c, const num_t &a, T b) {
   return c;
 }
 
-
-
-num_t & __fastcall div_qr (num_t *, num_t *, const num_t &, const num_t &);
+//num_t & __fastcall div_qr (num_t *, num_t *, const num_t &, const num_t &, DivisionMode dm=DM_EUCLIDEAN);
 
 template <typename T>
-inline T __fastcall div_qr (num_t *q, const num_t &a, T b) {
+inline T __fastcall div_qr (num_t *q, const num_t &a, T b, DivisionMode dm) {
   assert (a.is_normalized());
-  assert (b > 0);
   if (a.is_zero()) { if (q != nullptr)  q->set_zero();  return 0; }
   if (b == 1) { if (q != nullptr)  *q = a;  return 0; }
-  if (a < b) { if (q != nullptr) q->set_zero();  return (T)a; }
+  if (b == -1) { if (q != nullptr)  (*q = a).neg();  return 0; }
+  sign_t s = (a.sign()^sign(b))<0 ? -1 : 1;
+  vec_t A(a);
+  T B = abs(b);
   T r = 0;	// The resulting reminder to return.
-  /*if (is_power_of_2(b)) {
+  if (A < B) { if (q != nullptr) q->set_zero();  r = (T)a; }
+  else /*if (is_power_of_2(b)) {
     if (q != nullptr)  shift_right (*q, a, pos_of_high_one(b));
-    if (fit_into_one_limb<T>())  r = (T)a[0];
+    if (fit_num_to_one_limb<T>())  r = (T)a[0];
     else  for (size_t i=0; i<a.size && i<limbs_in_<T>(); ++i)  r |= a[i]<<(LIMB_BITS*i);
     return r & (b-1);
-  }*/
+  } else */
   if (fit_into_one_limb<T>()) {	// !!! Not optimal
-    num_t R (size_in_limbs<T>(), CI_SIZE);
-    div_qr (q, &R, a, num_t(b));
-    r = R;
+    limb_t R;
+    if (q == nullptr)  ::div_qr (nullptr, &R, A.limbs, A.size, (limb_t)B);
+    else  q->size = ::div_qr (q->limbs, &R, A.limbs, A.size, (limb_t)B);
+    r = (T)R;
   } else {
     num_t R (limbs_in_<T>(), CI_SIZE);
-    div_qr (q, &R, a, num_t(b));
+    div_qr (q, &R, a, num_t(b), dm);
     r = R;
+  }
+  A.detach();
+  if (s<0) {
+    if (a.size<0)  r = b-r;
+    if (q!=nullptr)  q->neg();
+  } else {
+    if (a.size<0)  r = -b-r;
+  }
+  if (dm == DM_EUCLIDEAN) {
+    if (r<0) {
+      if (b>0) {
+        r += b;
+        if (q != nullptr)  q->dec();
+      } else {
+        r -= b;
+        if (q != nullptr)  q->inc();
+      }
+    }
+  } else if (dm == DM_TRUNCATED) {
+    if (r>0 && a.size<0) {
+      if (b>0) {
+        r -= b;
+        if (q != nullptr)  q->inc();
+      } else {
+        r += b;
+        if (q != nullptr)  q->dec();
+      }
+    } else if (r<0 && a.size>0) {
+      if (b>0) {
+        r += b;
+        if (q != nullptr)  q->dec();
+      } else {
+        r -= b;
+        if (q != nullptr)  q->inc();
+      }
+    }
+  } else if (dm == DM_FLOORED) {
+    if (r>0&&b<0 || r<0&&b>0) {
+      r += b;
+      if (q != nullptr)  q->dec();
+    }
   }
   return r;
 }
 
 template <typename T>
-inline num_t & __fastcall div (num_t &q, const num_t &a, T b) { div_qr (&q, a, b);  return q; }
+inline num_t & __fastcall div (num_t &q, const num_t &a, T b, DivisionMode dm=DM_EUCLIDEAN) { div_qr (&q, a, b, dm);  return q; }
 
 template <typename T>
-inline T __fastcall mod (const num_t &a, T b) { return div_qr (nullptr, a, b); }
+inline T __fastcall mod (const num_t &a, T b, DivisionMode dm=DM_EUCLIDEAN) { return div_qr (nullptr, a, b, dm); }
+
 
 
     // Helpers
@@ -426,7 +469,5 @@ inline num_t __fastcall operator % (const num_t &a, const num_t &b) { num_t c (s
 
 inline num_t __fastcall operator << (const num_t &a, bitcnt_t shift) { num_t c (size_after_shift_left (a, shift), CI_SIZE);  return shift_left (c, a, shift); }
 inline num_t __fastcall operator >> (const num_t &a, bitcnt_t shift) { num_t c (size_after_shift_right (a, shift), CI_SIZE);  return shift_right (c, a, shift); }
-
-
 
 #endif

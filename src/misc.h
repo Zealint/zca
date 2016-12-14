@@ -287,18 +287,18 @@ size_t how_many_limbs (size_t d, u8 base=10u);
 size_t how_many_digits (const char *str, u8 base=10u);
 
 template <typename T>
-size_t limbs_in_() {
+inline size_t limbs_in_() {
   assert (sizeof (T) >= sizeof (limb_t));
   return sizeof (T) / sizeof (limb_t);
 }
 
 template <typename T>
-bool fit_into_one_limb () { return sizeof (T) <= sizeof (limb_t); }
+inline bool fit_into_one_limb () { return sizeof (T) <= sizeof (limb_t); }
 
 
 
 template <typename T>
-size_t size_in_limbs (T a) {
+inline size_t size_in_limbs (T a) {
   if (fit_into_one_limb<T>())  return 1;
   if ((limb_t)a == a)  return 1;
   if ((dlimb_t)a == a)  return 2;
@@ -309,6 +309,7 @@ size_t size_in_limbs (T a) {
 
 template <typename T, typename S>
 void __fastcall split (limb_t *limbs, S &size, T a) {
+  // !!! if T is signed then right shift may work wrong for 0x80..00 numbers !!!
   if (a == 0)  size = 0;
   else if (fit_into_one_limb<T>())  { *limbs = (limb_t)a;  size = 1; }
   else {

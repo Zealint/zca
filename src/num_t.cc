@@ -128,7 +128,7 @@ num_t & __fastcall diff (num_t &c, const vec_t &a, const vec_t &b) {
     c.size = (offset_t)C.size;
   }
   else {
-    ::sub (C, a, b);
+    ::sub (C, b, a);
     c.size = -(offset_t)C.size;
   }
   C.detach();
@@ -139,9 +139,10 @@ num_t & __fastcall diff (num_t &c, const vec_t &a, const vec_t &b) {
 
 num_t & __fastcall add (num_t &z, const num_t &u, const num_t &v) {
   vec_t U(u), V(v), Z(z);
+  sign_t s = u.sign();
   if ((u.size ^ v.size) < 0)  ::diff (z, U, V);	// Opposite signs
   else  z.size = (offset_t)::add (Z, U, V).size;
-  if (u.size < 0)  z.size = -z.size;
+  if (s < 0)  z.size = -z.size;
   U.detach();
   V.detach();
   Z.detach();
@@ -188,8 +189,9 @@ num_t & __fastcall mul (num_t &z, const num_t &u, slimb_t v) {
 
 num_t & __fastcall mul (num_t &z, const num_t &u, const num_t &v) {
   vec_t Z(z), U(u), V(v);
+  sign_t s = u.size ^ v.size;
   z.size = (offset_t)::mul (Z, U, V).size;
-  if ((u.size ^ v.size) < 0)  z.size = -z.size;
+  if (s < 0)  z.size = -z.size;
   Z.detach();
   U.detach();
   V.detach();
@@ -198,90 +200,70 @@ num_t & __fastcall mul (num_t &z, const num_t &u, const num_t &v) {
 
 
 
-num_t & __fastcall div (num_t &z, const num_t &u, limb_t v) {
-  assert (v != 0);
-  if (u.size == 0)  z.set_zero();
-  else {
-    limb_t r;
-    sign_t sign_u = u.sign();
-    z.size = (offset_t)::div_qr (z.limbs, &r, u.limbs, abs(u.size), v);
-    if (sign_u < 0) {
-      z.size = -z.size;
-      if (r > 0)  --z;
+num_t & __fastcall div_qr (num_t *q, num_t *r, const num_t &a, const num_t &b, DivisionMode dm) {
+  assert (a.is_normalized() && b.is_normalized());
+  assert (!b.is_zero());
+  assert (q != r);	// It also means that either 'q' or 'r' is not nullptr.
+  sign_t s = (a.size^b.size)<0 ? -1 : 1;
+  vec_t A(a), B(b), Q, R;
+  num_t r_tmp (a);
+  if (q != nullptr)  Q.attach(*q);
+  R.attach(r_tmp);
+  div_qr (q!=nullptr?&Q:nullptr, &R, A, B);
+  if (q != nullptr) q->size = (offset_t)Q.size;
+  r_tmp.size = (offset_t)R.size;
+  A.detach();
+  B.detach();
+  Q.detach();
+  R.detach();
+
+  if (s<0) {
+    if (a.size<0)  r_tmp.neg();
+    if (q!=nullptr)  q->neg();
+  } else {
+    if (a.size<0)  r_tmp.neg();
+  }
+  if (dm == DM_EUCLIDEAN) {
+    if (r_tmp.size<0) {
+      if (b.size>0) {
+        r_tmp += b;
+        if (q != nullptr)  q->dec();
+      } else {
+        r_tmp -= b;
+        if (q != nullptr)  q->inc();
+      }
+    }
+  } else if (dm == DM_TRUNCATED) {
+    if (r_tmp.size>0 && a.size<0) {
+      if (b>0) {
+        r_tmp -= b;
+        if (q != nullptr)  q->inc();
+      } else {
+        r_tmp += b;
+        if (q != nullptr)  q->dec();
+      }
+    } else if (r_tmp<0 && a.size>0) {
+      if (b.size>0) {
+        r_tmp += b;
+        if (q != nullptr)  q->dec();
+      } else {
+        r_tmp -= b;
+        if (q != nullptr)  q->inc();
+      }
+    }
+  } else if (dm == DM_FLOORED) {
+    if (r_tmp.size>0&&b.size<0 || r_tmp.size<0&&b.size>0) {
+      r_tmp += b;
+      if (q != nullptr)  q->dec();
     }
   }
-  return z;
+  if (r != nullptr) *r = r_tmp;
+  if (q != nullptr)  return *q;
+  return *r;
 }
 
-
-
-num_t & __fastcall div (num_t &z, const num_t &u, slimb_t v) {
-  z.size = v>=0 ? ::div(z, u, (limb_t)v).size : -::div(z, u, (limb_t)abs(v)).size;
-  return z;
-}
-
-
-
-num_t & __fastcall mod (num_t &z, const num_t &u, limb_t v, DivisionMode dm) {
-  assert (v != 0);
-  vec_t U(u);
-  z[0] = ::mod (U, v);
-  z.size = u.size<0 ? -1 : 1;
-  z.normalize();
-  if (dm == DM_EUCLIDEAN && z.size < 0)  z.inc(v);
-  if (dm == DM_TRUNCATED && u.size < 0 && z.size > 0)  z.dec(v);
-  U.detach();
-  return z;
-}
-
-
-
-num_t & __fastcall mod (num_t &z, const num_t &u, slimb_t v, DivisionMode dm) {
-  assert (v != 0);
-  ::mod (z, u, (limb_t)abs(v), dm);
-  if (dm == DM_FLOORED && v < 0 && z.size>0)  ::inc (z, u, v);
-  return z;
-}
-
-
-
-num_t & __fastcall div (num_t &z, const num_t &u, const num_t &v) {
-  assert (!v.is_zero());
-  if (u.size == 0)  z.set_zero();
-  else {
-    num_t r(u);
-    size_t size_r = abs(r.size);
-    z.size = (offset_t)::div_qr (z.limbs, r.limbs, size_r, v.limbs, abs(v.size));
-    if ((u.size ^ v.size) < 0) {
-      z.size = -z.size;
-      if (size_r > 0)  --z;
-    }
-  }
-  return z;
-}
-
-
-
-num_t & __fastcall mod (num_t &z, const num_t &u, const num_t &v, DivisionMode dm) {
-  assert (!v.is_zero());
-  if (u.size == 0)  z.set_zero();
-  else {
-    num_t r(u);
-    size_t size_r = abs (r.size);
-    num_t tmp(u);	// !!! nullptr doesn't work.
-    ::div_qr (tmp.limbs, r.limbs, size_r, v.limbs, abs(v.size));
-    z.size = (offset_t)size_r;
-    if (size_r > 0)  copy_up (z.limbs, r.limbs, size_r);
-    if (dm == DM_EUCLIDEAN && u.size < 0 && v.size < 0)  z += v;
-    if (dm == DM_EUCLIDEAN && u.size < 0 && v.size > 0)  ::sub (z, v, z);
-    if (dm == DM_TRUNCATED && u.size < 0 && v.size < 0)  z.neg();
-    if (dm == DM_TRUNCATED && u.size < 0 && v.size > 0)  z.neg();
-    if (dm == DM_FLOORED && u.size > 0 && v.size < 0) { z += v;  z.neg(); }
-    if (dm == DM_FLOORED && u.size < 0 && v.size > 0) { z -= v;  z.neg(); }
-    if (dm == DM_FLOORED && u.size < 0 && v.size < 0) { z.neg(); }
-  }
-  return z;
-}
+num_t & __fastcall div (num_t &c, const num_t &a, const num_t &b, DivisionMode dm) { return div_qr (&c, nullptr, a, b, dm); }
+num_t & __fastcall mod (num_t &c, const num_t &a, const num_t &b, DivisionMode dm) { return div_qr (nullptr, &c, a, b, dm); }
 
 
 

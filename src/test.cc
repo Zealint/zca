@@ -218,8 +218,6 @@ bool test_misc() {
 
   for (size_t i=0; i<36; ++i)  check (digit_by_char (char_by_digit (i)) == i);
 
-
-
   return ok;
 }
 
@@ -845,6 +843,7 @@ bool test_low_level() {
     check (size_a==1 && a[0]==1 && a[1]==0 && a[2]==0 && a[3]==0 && a[4]==0);
 
 #endif
+// !!! Without preinversion.
 
     delete[] Q;
   }
@@ -1219,6 +1218,16 @@ bool test_high_level() {
     size_a = 3;
     size_c = div_qr (nullptr, a, size_a, b, 3);
     check (size_c==0 && size_a==3 && a[0]==LIMB_MAX && a[1]==LIMB_MAX && a[2]==7);
+
+    a[3] = 1;
+    a[2] = LIMB_MAX-2;
+    a[1] = LIMB_MAX;
+    a[0] = 1;
+    b[2] = 1;
+    b[1] = b[0] = LIMB_MAX;
+    size_a = 4;
+    size_c = div_qr (nullptr, a, size_a, b, 3);
+    check (size_c==0 && size_a==0);
 
     delete[] q;
   }
@@ -2408,7 +2417,7 @@ bool test_vec_t() {
     check (c.size==1 && c[0]==1);
     a = "333231302928272625242322212019181716151413121110987654321";
     b = "12345678910111213141516171819202122";
-    c = a / b;
+    c = a / b;  // !!! Why an exact size doesn't work here ???
     c.adapt(100);
     check (c == "26991735760708423406858");
     a /= b;
@@ -2441,7 +2450,6 @@ bool test_vec_t() {
 
 
 
-/*
 bool test_num_t() {
   bool ok = true;
 
@@ -2449,7 +2457,7 @@ bool test_num_t() {
     num_t a;
     check (a.size==0 && a.limbs==nullptr);
     check (a.is_zero());
-    num_t b(3);
+    num_t b (3, CI_SIZE);
     check (b.size==0 && b.limbs!=nullptr);
     check (b.is_zero());
     b.size = -2;
@@ -2460,17 +2468,17 @@ bool test_num_t() {
     check (c==b && b==c);
     check (&c != &b);
     check (c.limbs != b.limbs);
-    num_t d(c+b);
+    /*num_t d(c+b);
     check (d.size==-2 && d[1]==4 && d[0]==2);
     check (c.size==-2 && c[1]==2 && c[0]==1);
     check (c==b);
     check (d.limbs!=b.limbs && d.limbs!=c.limbs);
     d.set_zero();
-    check (d.is_zero());
+    check (d.is_zero());*/
   }
 
   {	// Compare
-    num_t a(2);
+    num_t a (2, CI_SIZE);
     a.size = 2;
     a[0] = 1;
     a[1] = 1;
@@ -2600,7 +2608,7 @@ bool test_num_t() {
   }
 
   {	// Conversion from i64/u64 and string
-    num_t a(3);
+    num_t a (3, CI_SIZE);
     check (a.is_zero());
     a = 0LLU;
     check (a.is_zero());
@@ -2757,13 +2765,13 @@ bool test_num_t() {
 	}
 
 	{	// To / From string by back and forth conversion
-    num_t a(3);
+    num_t a (3, CI_SIZE);
     a.size = -3;
     a[0] = 1;
     a[1] = LIMB_MAX;
     a[2] = (limb_t)1 << (LIMB_BITS-1);	// 0x80..00
     char str[LIMB_BITS*3+2];
-    num_t b(3);
+    num_t b (3, CI_SIZE);
     for (u8 base=2; base<=36; ++base) {
       a.to_string (str, base);
       b.from_string (str, base);
@@ -2774,7 +2782,7 @@ bool test_num_t() {
 	}
 
 	{ // Resize, Adapt
-    num_t a(3);
+    num_t a (3, CI_SIZE);
     a.size = -3;
     a[0] = 1;
     a[1] = 2;
@@ -2791,7 +2799,7 @@ bool test_num_t() {
 	}
 
 	{ // Normalize
-    num_t a(10);
+    num_t a (10, CI_SIZE);
     a.size = -3;
     a[0] = a[1] = a[2] = 0;
     check (!a.is_normalized());
@@ -2825,7 +2833,7 @@ bool test_num_t() {
 	}
 
 	{ // Operator =
-    num_t a(3), b(3);
+    num_t a (3, CI_SIZE), b (3, CI_SIZE);
     a.size = -3;
     a[0] = 0;
     a[1] = 1;
@@ -2850,7 +2858,7 @@ bool test_num_t() {
     check (a.size == -b.size && a[0] == b[0]);
     a = -a;
     check (a.size==-1 && a[0]==123);
-    num_t c(1);
+    num_t c (1, CI_SIZE);
     c = -a;
     check (c.size==1 && c[0]==123);
     check (a != -a);
@@ -2866,7 +2874,7 @@ bool test_num_t() {
   }
 
   {	// inc, dec, ++, --
-    num_t a(2);
+    num_t a (2, CI_SIZE);
     check (a.is_zero());
     --a;
     check (a == "-1");
@@ -2888,7 +2896,7 @@ bool test_num_t() {
 
     a = (u64)LIMB_MAX-10;
     a.neg();
-    num_t b(2);
+    num_t b (2, CI_SIZE);
     b = a-=13;
     check (a.size==-2 && a[0]==2 && a[1]==1);
     check (b == a);
@@ -2903,7 +2911,7 @@ bool test_num_t() {
   }
 
   {	// add, sub
-    num_t a(16), b(16), c(16);
+    num_t a (16, CI_SIZE), b (16, CI_SIZE), c (16, CI_SIZE);
     a = "12345678910111213141516171819202122";
     b = "22212019181716151413121110987654321";
     c = a + b;
@@ -2961,7 +2969,7 @@ bool test_num_t() {
   }
 
   {	// mul by limb and slimb
-    num_t a(16), b(16), c(16);
+    num_t a (16, CI_SIZE), b (16, CI_SIZE), c (16, CI_SIZE);
     check (a.is_zero());
 
     b = a.mul (0);
@@ -3007,15 +3015,18 @@ bool test_num_t() {
   }
 
   {	// Mul
-    num_t a(100), b(100), c(100);
+    num_t a (100, CI_SIZE), b (100, CI_SIZE), c (100, CI_SIZE);
     c = a*b;
+    c.adapt(100);
     check (c.is_zero());
     a = 1llu;
     a <<= 256;
     --a;
     c = a*b;
+    c.adapt(100);
     check (c.is_zero());
     b = a>>128;
+    b.adapt(100);
     c = a*b;
     check (c == "39402006196394479212279040100143613804963947181228130472524722419237033863643600344381704752381994682191283092455425");
     check (-a*b == -c);
@@ -3028,15 +3039,16 @@ bool test_num_t() {
     check (c == a*10);
     c = a*b.neg();
     check (c == a*(-10));
+    c.adapt(100);
 
     a = 19993llu;
     for (size_t i=1; i<=5; ++i)  c = a*=a;
     check (a == "424712371344309495688001249487498185561027566896946736223051911729174087951070184048392022854482933317538743363994093094913995620549779201");
     check (c == a);
   }
-  // !!! add div_qr functions !!!
+
   {	// Div by limb and slimb
-    num_t a(30), b(30);
+    num_t a (30, CI_SIZE), b (30, CI_SIZE);
 
     a /= 10u;
     check (a.is_zero());
@@ -3049,7 +3061,7 @@ bool test_num_t() {
     check (a == "107548842094329817469549");
     check (b == a);
 
-    b = a/=(-10u);
+    b = a/=(-10);
     check (a == "-10754884209432981746954");
     check (b == a);
 
@@ -3070,8 +3082,10 @@ bool test_num_t() {
     check (b == a);
   }
 
+  // !!! div_qr ???
+
   { // Mod by limb and slimb
-    num_t a(30), b(30);
+    num_t a (30, CI_SIZE), b (30, CI_SIZE);
     a%=10u;
     check (a.is_zero());
     a%=-10;
@@ -3079,6 +3093,7 @@ bool test_num_t() {
 
     a = "14966675814359580587845230627";
     b = a%255;
+    b.adapt(30);
     check (b == 177u);
 
     b = a%=255;
@@ -3087,6 +3102,7 @@ bool test_num_t() {
 
     a = "14966675814359580587845230627";
     b = a%(-64);
+    b.adapt(30);
     check (b == 35u);
 
     a %= -64;
@@ -3094,6 +3110,7 @@ bool test_num_t() {
 
     a = "-14966675814359580587845230627";
     b = a%11;
+    b.adapt(30);
     check (b == 2u);
 
     a %= 11;
@@ -3101,6 +3118,7 @@ bool test_num_t() {
 
     a = "-14966675814359580587845230627";
     b = a%(-11);
+    b.adapt(30);
     check (b == 2u);
 
     a %= -11;
@@ -3115,9 +3133,11 @@ bool test_num_t() {
     a.mod (-11, DM_FLOORED);
     check (a == -2);
     a = -b;
+    a.adapt(30);
     a.mod (11, DM_FLOORED);
-    check (a == -9);
+    check (a == 2);
     a = -b;
+    a.adapt(30);
     a.mod (-11, DM_FLOORED);
     check (a == -9);
 
@@ -3128,29 +3148,36 @@ bool test_num_t() {
     a.mod (-11, DM_TRUNCATED);
     check (a == 9u);
     a = -b;
+    a.adapt(30);
     a.mod (11, DM_TRUNCATED);
     check (a == -9);
     a = -b;
+    a.adapt(30);
     a.mod (-11, DM_TRUNCATED);
     check (a == -9);
   }
 
   {	// div, mod
-    num_t a(50), b(50), c(50);
+    num_t a (50, CI_SIZE), b (50, CI_SIZE), c (50, CI_SIZE);
 
     a = "45349668008961920685673151087083693018221";
     b = "388328016259855395064461231";
 
     c = b/a;
+    c.adapt(50);
     check (c.is_zero());
     c = a/b;
+    c.adapt(50);
     check (c == "116781859948563");
     c = -a/b;
+    c.adapt(50);
     check (c == "-116781859948564");
     c = a/-b;
-    check (c == "-116781859948564");
+    c.adapt(50);
+    check (c == "-116781859948563");
     c = -a/-b;
-    check (c == "116781859948563");
+    c.adapt(50);
+    check (c == "116781859948564");
 
     c = a;
     c.mod (b, DM_EUCLIDEAN);
@@ -3159,9 +3186,11 @@ bool test_num_t() {
     c.mod (-b, DM_EUCLIDEAN);
     check (c == "192491368730588944725357168");
     c = -a;
+    c.adapt(50);
     c.mod (b, DM_EUCLIDEAN);
     check (c == "195836647529266450339104063");
     c = -a;
+    c.adapt(50);
     c.mod (-b, DM_EUCLIDEAN);
     check (c == "195836647529266450339104063");
 
@@ -3172,9 +3201,11 @@ bool test_num_t() {
     c.mod (-b, DM_TRUNCATED);
     check (c == "192491368730588944725357168");
     c = -a;
+    c.adapt(50);
     c.mod (b, DM_TRUNCATED);
     check (c == "-192491368730588944725357168");
     c = -a;
+    c.adapt(50);
     c.mod (-b, DM_TRUNCATED);
     check (c == "-192491368730588944725357168");
 
@@ -3185,9 +3216,11 @@ bool test_num_t() {
     c.mod (-b, DM_FLOORED);
     check (c == "-195836647529266450339104063");
     c = -a;
+    c.adapt(50);
     c.mod (b, DM_FLOORED);
     check (c == "195836647529266450339104063");
     c = -a;
+    c.adapt(50);
     c.mod (-b, DM_FLOORED);
     check (c == "-192491368730588944725357168");
 
@@ -3201,13 +3234,10 @@ bool test_num_t() {
     c = a;
     c.mod (b, DM_FLOORED);
     check (c.is_zero());
-
-    //char str[200];
-    //printf ("%s\n", c.to_string(str));
   }
 
   {	// Shift
-    num_t a(100), b(100), c(100);
+    num_t a (100, CI_SIZE), b (100, CI_SIZE), c (100, CI_SIZE);
     a <<= 0;
     check (a.is_zero());
     a >>= 0;
@@ -3380,7 +3410,7 @@ bool test_int() {
   check (a % 100000000000000000000_dec == 0);
   for (limb_t s=1; s<=78; ++s)  b *= s;
   for (limb_t s=79; s<=100; ++s)  c *= s;
-  for (limb_t s=1; s<=100; ++s)  check ((a%s).is_zero());
+  for (limb_t s=1; s<=100; ++s)  check (a%s == 0);
   check (a / b == c);
   check (b / a == 0);
   check ((a%b).is_zero());
@@ -3391,7 +3421,7 @@ bool test_int() {
   return ok;
 }
 
-*/
+
 
 bool unit_tests() {
 	bool ok = true;
@@ -3402,8 +3432,8 @@ bool unit_tests() {
 	ok = test_low_level() && ok;
 	ok = test_high_level() && ok;
 	ok = test_vec_t() && ok;
-	//ok = test_num_t() && ok;
-	//ok = test_int() && ok;
+	ok = test_num_t() && ok;
+	ok = test_int() && ok;
 
 	return ok;
 }

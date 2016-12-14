@@ -7,34 +7,45 @@
 #include "typedef.h"
 #include "num_t.h"
 
-/*
+
 
 class Int;
 
-template <typename T> inline size_t size_after_assign () {
-  if (sizeof (T) <= sizeof (limb_t))  return 1;
-  return sizeof (T) / sizeof (limb_t);
-}
 
 
+template <typename T> inline size_t size_after_add (const Int &a, T b);
+template <typename T> inline size_t size_after_sub (const Int &a, T b);
+template <typename T> inline size_t size_after_mul (const Int &a, T b);
+template <typename T> inline size_t size_after_div (const Int &a, T b);
+template <typename T> inline size_t size_after_mod (const Int &a, T b);
 
-inline size_t size_after_add (const Int &a, limb_t b);
-inline size_t size_after_add (const Int &a, slimb_t b);
 inline size_t size_after_add (const Int &a, const Int &b);
-inline size_t size_after_sub (const Int &a, limb_t b);
-inline size_t size_after_sub (const Int &a, slimb_t b);
 inline size_t size_after_sub (const Int &a, const Int &b);
-inline size_t size_after_mul (const Int &a, limb_t b);
-inline size_t size_after_mul (const Int &a, slimb_t b);
 inline size_t size_after_mul (const Int &a, const Int &b);
-inline size_t size_after_div (const Int &a, limb_t b);
-inline size_t size_after_div (const Int &a, slimb_t b);
 inline size_t size_after_div (const Int &a, const Int &b);
-inline size_t size_after_mod (const Int &a, limb_t b);
-inline size_t size_after_mod (const Int &a, slimb_t b);
 inline size_t size_after_mod (const Int &a, const Int &b);
+
 inline size_t size_after_shift_left (const Int &a, bitcnt_t s);
 inline size_t size_after_shift_right (const Int &a, bitcnt_t s);
+
+
+
+Int & __fastcall inc (Int &c, const Int &a, limb_t b=1);
+Int & __fastcall dec (Int &c, const Int &a, limb_t b=1);
+Int & __fastcall add (Int &, const Int &, const Int &);
+template <typename T> inline Int & __fastcall add (Int &c, const Int &a, T b);
+Int & __fastcall sub (Int &, const Int &, const Int &);
+template <typename T> inline Int & __fastcall sub (Int &c, const Int &a, T b);
+Int & __fastcall mul (Int &, const Int &, const Int &);
+template <typename T> inline Int & __fastcall mul (Int &c, const Int &a, T b);
+Int & __fastcall div_qr (Int *, Int *, const Int &, const Int &, DivisionMode=DM_EUCLIDEAN);
+template <typename T> inline T __fastcall div_qr (Int *q, const Int &a, T b, DivisionMode=DM_EUCLIDEAN);
+template <typename T> inline Int & __fastcall div (Int &q, const Int &a, T b, DivisionMode=DM_EUCLIDEAN);
+template <typename T> inline T __fastcall mod (const Int &a, T b, DivisionMode=DM_EUCLIDEAN);
+Int & __fastcall div (Int &c, const Int &a, const Int &b, DivisionMode=DM_EUCLIDEAN);
+Int & __fastcall mod (Int &c, const Int &a, const Int &b, DivisionMode=DM_EUCLIDEAN);
+Int & __fastcall shift_left (Int &c, const Int &a, bitcnt_t shift);
+Int & __fastcall shift_right (Int &c, const Int &a, bitcnt_t shift);
 
 
 
@@ -46,23 +57,16 @@ class Int {
 
     		// Constructors and destructor
     Int(): data(), allocated(0) {} // Empty vector is initially zero.
-    explicit Int (size_t s) : data(s), allocated(s) {};
     Int (const Int &that): data (that.data), allocated (that.size()) {}
     Int (Int &&that): data (that.data), allocated (that.allocated) {}
     Int (const char *str, u8 base=10): data (str, base) {	// Constructor by string with default base (10)
-      allocated = data.unsigned_size();
+      allocated = data.abs_size();
     }
-
-    explicit Int (i8 a, ConstructorInterpreter ci) { if (ci == CI_NUMBER) *this = a;  else adapt (a); }
-    explicit Int (u8 a, ConstructorInterpreter ci) { if (ci == CI_NUMBER) *this = a;  else adapt (a); }
-    explicit Int (i16 a, ConstructorInterpreter ci) { if (ci == CI_NUMBER) *this = a;  else adapt (a); }
-    explicit Int (u16 a, ConstructorInterpreter ci) { if (ci == CI_NUMBER) *this = a;  else adapt (a); }
-    explicit Int (i32 a, ConstructorInterpreter ci) { if (ci == CI_NUMBER) *this = a;  else adapt (a); }
-    explicit Int (u32 a, ConstructorInterpreter ci) { if (ci == CI_NUMBER) *this = a;  else adapt (a); }
-    explicit Int (i64 a, ConstructorInterpreter ci) { if (ci == CI_NUMBER) *this = a;  else adapt (a); }
-    explicit Int (u64 a, ConstructorInterpreter ci) { if (ci == CI_NUMBER) *this = a;  else adapt (a); }
-
-
+    template <typename T>
+    Int (T a, ConstructorInterpreter ci=CI_NUMBER): allocated(0) {
+      if (ci == CI_NUMBER)  *this = a;
+      else  adapt((size_t)a);
+    }
     ~Int() {}
 
 
@@ -99,13 +103,14 @@ class Int {
     sign_t __fastcall sign() const { return data.sign(); }
 
         // Unsigned size of the number (how many limbs the number covers).
-    size_t __fastcall size() const { return data.unsigned_size(); }
+    size_t __fastcall size() const { return data.abs_size(); }
 
         // Comparison
     sign_t __fastcall compare (const Int &that) const { return data.compare (that.data); };
-    sign_t __fastcall compare (limb_t a) const { return data.compare(a); }
-    sign_t __fastcall compare (slimb_t a) const { return data.compare(a); }
+    template <typename T>  sign_t __fastcall compare (T a) const { return compare (Int(a)); }
     bool __fastcall operator == (const char *str) const { return data.compare (str) == 0; }
+
+
 
 
         // Get the number by different ways.
@@ -117,28 +122,34 @@ class Int {
       return *this;
     }
 
-    const Int & __fastcall operator = (const char *str) { adapt (how_many_digits (str));  data = str;  return *this; }
+    Int & __fastcall operator = (const char *str) { adapt (how_many_digits (str));  data = str;  return *this; }
 
-    const Int & __fastcall operator = (i8 a) { adapt (size_after_assign<i8>());  data = a;  return *this; }
-    const Int & __fastcall operator = (u8 a) { adapt (size_after_assign<u8>());  data = a;  return *this; }
-    const Int & __fastcall operator = (i16 a) { adapt (size_after_assign<i16>());  data = a;  return *this; }
-    const Int & __fastcall operator = (u16 a) { adapt (size_after_assign<u16>());  data = a;  return *this; }
-    const Int & __fastcall operator = (i32 a) { adapt (size_after_assign<i32>());  data = a;  return *this; }
-    const Int & __fastcall operator = (u32 a) { adapt (size_after_assign<u32>());  data = a;  return *this; }
-    const Int & __fastcall operator = (i64 a) { adapt (size_after_assign<i64>());  data = a;  return *this; }
-    const Int & __fastcall operator = (u64 a) { adapt (size_after_assign<u64>());  data = a;  return *this; }
 
-    //const Int & __fastcall operator = (i64 a) { adapt (LIMBS_IN_U64);  data = a;  return *this; }
-    //const Int & __fastcall operator = (u64 a) { adapt (LIMBS_IN_U64);  data = a;  return *this; }
 
-    const Int & __fastcall move (Int &that) {
+    // Convert number to built-in data type.
+    template <typename T> __fastcall operator T() const { return (T)data; }
+
+
+
+        // Get vector from signed or unsigned value.
+    		// The enough memory for itself should be allocated.
+        // Return the reference to itself.
+    template <typename T>
+    Int & __fastcall operator = (T a) {
+      adapt (size_in_limbs<T> (a));
+      data = a;
+    }
+
+
+
+    Int & __fastcall move (Int &that) {
       clear();
       return this->swap(that);
     }
 
 
 
-    const Int & __fastcall swap (Int &that) {
+    Int & __fastcall swap (Int &that) {
       data.swap (that.data);
       ::swap (allocated, that.allocated);
     }
@@ -175,93 +186,76 @@ class Int {
 
 
         // Negate itself.
-    const Int &__fastcall neg() { data.neg();  return *this; }
+    Int &__fastcall neg() { data.neg();  return *this; }
 
     		// Unary minus.
-    const Int __fastcall operator - () const { Int z (*this);  return z.neg(); }
+    Int __fastcall operator - () const { Int z (*this);  return z.neg(); }
 
 
 
         // Arithmetic functions
-    const Int & __fastcall add (limb_t a) { adapt (size_after_add (*this, a));  data.inc(a);  return *this; }
-    const Int & __fastcall add (slimb_t a) { adapt (size_after_add (*this, a));  data.inc(a);  return *this; }
-    const Int & __fastcall add (const Int &a) { adapt (size_after_add (*this, a));  data.add(a.data);  return *this; }
-
-    const Int & __fastcall sub (limb_t a) { adapt (size_after_sub (*this, a));  data.dec(a);  return *this; }
-    const Int & __fastcall sub (slimb_t a) { adapt (size_after_sub (*this, a));  data.dec(a);  return *this; }
-    const Int & __fastcall sub (const Int &a) { adapt (size_after_sub (*this, a));  data.sub(a.data);  return *this; }
-
-    const Int & __fastcall mul (limb_t a) { adapt (size_after_mul (*this, a));  data.mul(a);  return *this; }
-    const Int & __fastcall mul (slimb_t a) { adapt (size_after_mul (*this, a));  data.mul(a);  return *this; }
-    const Int & __fastcall mul (const Int &a) { adapt (size_after_mul (*this, a));  data.mul(a.data);  return *this; }
-
-    const Int & __fastcall div (limb_t a) { adapt (size_after_div (*this, a));  data.div(a);  return *this; }
-    const Int & __fastcall div (slimb_t a) { adapt (size_after_div (*this, a));  data.div(a);  return *this; }
-    const Int & __fastcall div (const Int &a) { adapt (size_after_div (*this, a));  data.div(a.data);  return *this; }
-
-    const Int & __fastcall mod (limb_t a, DivisionMode=DM_EUCLIDEAN) { adapt (size_after_mod (*this, a));  data.mod(a);  return *this; }
-    const Int & __fastcall mod (slimb_t a, DivisionMode=DM_EUCLIDEAN) { adapt (size_after_mod (*this, a));  data.mod(a);  return *this; }
-    const Int & __fastcall mod (const Int &a, DivisionMode=DM_EUCLIDEAN) { adapt (size_after_mod (*this, a));  data.mod(a.data);  return *this; }
+        // Itself is normalized for all these functions
+        // Reference to itself is returned by all these functions except modulo by built-in type
 
 
 
-        // Bit operations
-    const Int & __fastcall shift_left (bitcnt_t shift) { adapt (size_after_shift_left (*this, shift));  data.shift_left (shift);  return *this; }
-    const Int & __fastcall shift_right (bitcnt_t shift) { adapt (size_after_shift_right (*this, shift));  data.shift_right (shift);  return *this; }
+    Int & __fastcall inc (limb_t a=1) { return ::inc (*this, *this, a); }
+    Int & __fastcall dec (limb_t a=1) { return ::dec (*this, *this, a); }
 
+    template <typename T> Int & __fastcall add (T a) { return ::add (*this, *this, a); }
+    template <typename T> Int & __fastcall sub (T a) { return ::sub (*this, *this, a); }
+    template <typename T> Int & __fastcall mul (T a) { return ::mul (*this, *this, a); }
+    template <typename T> Int & __fastcall div (T a, DivisionMode dm=DM_EUCLIDEAN) { return ::div (*this, *this, a, dm); }
+    template <typename T> T __fastcall mod (T a, DivisionMode dm=DM_EUCLIDEAN) { T r = ::mod (*this, a, dm);  *this = r;  return r; }
 
+    Int & __fastcall add (const Int &a) { return ::add (*this, *this, a); }
+    Int & __fastcall sub (const Int &a) { return ::sub (*this, *this, a); }
+    Int & __fastcall mul (const Int &a) { return ::mul (*this, *this, a); }
+    Int & __fastcall div (const Int &a, DivisionMode dm=DM_EUCLIDEAN) { return ::div (*this, *this, a, dm); }
+    Int & __fastcall mod (const Int &a, DivisionMode dm=DM_EUCLIDEAN) { return ::mod (*this, *this, a, dm); }
 
-        // Helpers
+    Int & __fastcall shift_left (bitcnt_t shift) { return ::shift_left (*this, *this, shift); }
+    Int & __fastcall shift_right (bitcnt_t shift) { return ::shift_right (*this, *this, shift); }
 
-        // Prefix operators of increment and decrement
-    const Int & __fastcall operator ++ () { return this->add((limb_t)1); }
-    const Int & __fastcall operator -- () { return this->sub((limb_t)1); }
+        // Helpers.
 
-    const Int & __fastcall operator+= (limb_t a) { return this->add(a); }
-    const Int & __fastcall operator+= (slimb_t a) { return this->add(a); }
-    const Int & __fastcall operator+= (const Int & a) { return this->add(a); }
+    Int & __fastcall operator ++ () { return this->inc(); }
+    Int & __fastcall operator -- () { return this->dec(); }
 
-    const Int & __fastcall operator-= (limb_t a) { return this->sub(a); }
-    const Int & __fastcall operator-= (slimb_t a) { return this->sub(a); }
-    const Int & __fastcall operator-= (const Int & a) { return this->sub(a); }
+    template <typename T> Int & __fastcall operator += (T a) { return add (a); }
+    template <typename T> Int & __fastcall operator -= (T a) { return sub (a); }
+    template <typename T> Int & __fastcall operator *= (T a) { return mul (a); }
+    template <typename T> Int & __fastcall operator /= (T a) { return div (a); }
+    template <typename T> T __fastcall operator %= (T a) { return mod (a); }
 
-    const Int & __fastcall operator*= (limb_t a) { return this->mul(a); }
-    const Int & __fastcall operator*= (slimb_t a) { return this->mul(a); }
-    const Int & __fastcall operator*= (const Int & a) { return this->mul(a); }
+    Int & __fastcall operator += (const Int &a) { return add (a); }
+    Int & __fastcall operator -= (const Int &a) { return sub (a); }
+    Int & __fastcall operator *= (const Int &a) { return mul (a); }
+    Int & __fastcall operator /= (const Int &a) { return div (a); }
+    Int & __fastcall operator %= (const Int &a) { return mod (a); }
 
-    const Int & __fastcall operator/= (limb_t a) { return this->div(a); }
-    const Int & __fastcall operator/= (slimb_t a) { return this->div(a); }
-    const Int & __fastcall operator/= (const Int &a) { return this->div(a); }
+    Int & __fastcall operator <<= (bitcnt_t shift) { return shift_left (shift); }
+    Int & __fastcall operator >>= (bitcnt_t shift) { return shift_right (shift); }
 
-    const Int & __fastcall operator%= (limb_t a) { return this->mod(a); }
-    const Int & __fastcall operator%= (slimb_t a) { return this->mod(a); }
-    const Int & __fastcall operator%= (const Int &a) { return this->mod(a); }
+    template <typename T> friend Int & __fastcall add (Int &, const Int &, T);
+    template <typename T> friend Int & __fastcall sub (Int &, const Int &, T);
+    template <typename T> friend Int & __fastcall mul (Int &, const Int &, T);
+    template <typename T> friend inline T __fastcall div_qr (Int *q, const Int &a, T b, DivisionMode dm);
+    template <typename T> friend Int & __fastcall div (Int &, const Int &, T, DivisionMode);
+    template <typename T> friend T __fastcall mod (Int &, const Int &, T, DivisionMode);
 
-    const Int & __fastcall operator <<= (bitcnt_t shift) { return this->shift_left (shift); }
-    const Int & __fastcall operator >>= (bitcnt_t shift) { return this->shift_right (shift); }
+    friend inline Int & __fastcall inc (Int &, const Int &, limb_t);
+    friend inline Int & __fastcall dec (Int &, const Int &, limb_t);
 
-    friend const Int & __fastcall add (Int &, const Int &, limb_t);
-    friend const Int & __fastcall add (Int &, const Int &, slimb_t);
-    friend const Int & __fastcall add (Int &, const Int &, const Int &);
+    friend Int & __fastcall add (Int &, const Int &, const Int &);
+    friend Int & __fastcall sub (Int &, const Int &, const Int &);
+    friend Int & __fastcall mul (Int &, const Int &, const Int &);
+    friend Int & __fastcall div_qr (Int *q, Int *r, const Int &a, const Int &b, DivisionMode dm);
+    friend Int & __fastcall div (Int &, const Int &, const Int &, DivisionMode);
+    friend Int & __fastcall mod (Int &, const Int &, const Int &, DivisionMode);
 
-    friend const Int & __fastcall sub (Int &, const Int &, limb_t);
-    friend const Int & __fastcall sub (Int &, const Int &, slimb_t);
-    friend const Int & __fastcall sub (Int &, const Int &, const Int &);
-
-    friend const Int & __fastcall mul (Int &, const Int &, limb_t);
-    friend const Int & __fastcall mul (Int &, const Int &, slimb_t);
-    friend const Int & __fastcall mul (Int &, const Int &, const Int &);
-
-    friend const Int & __fastcall div (Int &, const Int &, limb_t);
-    friend const Int & __fastcall div (Int &, const Int &, slimb_t);
-    friend const Int & __fastcall div (Int &, const Int &, const Int &);
-
-    friend const Int & __fastcall mod (Int &, const Int &, limb_t, DivisionMode);
-    friend const Int & __fastcall mod (Int &, const Int &, slimb_t, DivisionMode);
-    friend const Int & __fastcall mod (Int &, const Int &, const Int &, DivisionMode);
-
-    friend const Int & __fastcall shift_left (Int &, const Int &, bitcnt_t);
-    friend const Int & __fastcall shift_right (Int &, const Int &, bitcnt_t);
+    friend Int & __fastcall shift_left (Int &, const Int &, bitcnt_t);
+    friend Int & __fastcall shift_right (Int &, const Int &, bitcnt_t);
 };
 
 
@@ -275,233 +269,146 @@ inline const Int __fastcall operator"" _bin (const char *str) { assert (str[0]==
 
 
 
+template <typename T> inline const bool __fastcall operator <  (const Int &a, T b) { return a.compare(b) < 0; }
+template <typename T> inline const bool __fastcall operator >  (const Int &a, T b) { return a.compare(b) > 0; }
+template <typename T> inline const bool __fastcall operator <= (const Int &a, T b) { return a.compare(b) <= 0; }
+template <typename T> inline const bool __fastcall operator >= (const Int &a, T b) { return a.compare(b) >= 0; }
+template <typename T> inline const bool __fastcall operator != (const Int &a, T b) { return a.compare(b) != 0; }
+template <typename T> inline const bool __fastcall operator == (const Int &a, T b) { return a.compare(b) == 0; }
+
+template <typename T> inline const bool __fastcall operator <  (T a, const Int &b) { return b.compare(a) > 0; }
+template <typename T> inline const bool __fastcall operator >  (T a, const Int &b) { return b.compare(a) < 0; }
+template <typename T> inline const bool __fastcall operator <= (T a, const Int &b) { return b.compare(a) >= 0; }
+template <typename T> inline const bool __fastcall operator >= (T a, const Int &b) { return b.compare(a) <= 0; }
+template <typename T> inline const bool __fastcall operator != (T a, const Int &b) { return b.compare(a) != 0; }
+template <typename T> inline const bool __fastcall operator == (T a, const Int &b) { return b.compare(a) == 0; }
+
+inline const bool __fastcall operator <  (const Int &a, const Int &b) { return a.compare(b) < 0; }
+inline const bool __fastcall operator >  (const Int &a, const Int &b) { return a.compare(b) > 0; }
+inline const bool __fastcall operator <= (const Int &a, const Int &b) { return a.compare(b) <= 0; }
+inline const bool __fastcall operator >= (const Int &a, const Int &b) { return a.compare(b) >= 0; }
+inline const bool __fastcall operator == (const Int &a, const Int &b) { return a.compare(b) == 0; }
+inline const bool __fastcall operator != (const Int &a, const Int &b) { return a.compare(b) != 0; }
+
+
+
 // !!! Optimize them (more accurately)
 
-inline size_t size_after_add (const Int &a, limb_t b) { return a.size() + 1; }
-inline size_t size_after_add (const Int &a, slimb_t b) { return a.size() + 1; }
+template <typename T> inline size_t size_after_add (const Int &a, T b) { return max (a.size(), size_in_limbs<T>(b)) + 1; }
+template <typename T> inline size_t size_after_sub (const Int &a, T b) { return max (a.size(), size_in_limbs<T>(b)) + 1; }
+template <typename T> inline size_t size_after_mul (const Int &a, T b) { return a.size() + size_in_limbs<T>(b); }
+template <typename T> inline size_t size_after_div (const Int &a, T b) { return a.size()>=size_in_limbs<T>(b) ? a.size() - size_in_limbs<T>(b) + 1 : 1; }
+
 inline size_t size_after_add (const Int &a, const Int &b) { return max (a.size(), b.size()) + 1; }
-inline size_t size_after_sub (const Int &a, limb_t b) { return a.size() + 1; }
-inline size_t size_after_sub (const Int &a, slimb_t b) { return a.size() + 1; }
 inline size_t size_after_sub (const Int &a, const Int &b) { return max (a.size(), b.size()) + 1; }
-inline size_t size_after_mul (const Int &a, limb_t b) { return a.size() + 1; }
-inline size_t size_after_mul (const Int &a, slimb_t b) { return a.size() + 1; }
 inline size_t size_after_mul (const Int &a, const Int &b) { return a.size() + b.size(); }
-inline size_t size_after_div (const Int &a, limb_t b) { return a.size(); }
-inline size_t size_after_div (const Int &a, slimb_t b) { return a.size(); }
 inline size_t size_after_div (const Int &a, const Int &b) { return a.size(); }
-inline size_t size_after_mod (const Int &a, limb_t b) { return 1; }
-inline size_t size_after_mod (const Int &a, slimb_t b) { return 2; }
 inline size_t size_after_mod (const Int &a, const Int &b) { return b.size() + 1; }
+
 inline size_t size_after_shift_left (const Int &a, bitcnt_t s) { return a.size() + (s+LIMB_BITS-1)/LIMB_BITS; }
 inline size_t size_after_shift_right (const Int &a, bitcnt_t s) { return a.size(); }
 
 
 
-inline const bool __fastcall operator < (const Int &u, limb_t v) { return u.compare(v) < 0; }
-inline const bool __fastcall operator > (const Int &u, limb_t v) {  return u.compare(v) > 0; }
-inline const bool __fastcall operator <= (const Int &u, limb_t v) {  return u.compare(v) <= 0; }
-inline const bool __fastcall operator >= (const Int &u, limb_t v) {  return u.compare(v) >= 0; }
-inline const bool __fastcall operator == (const Int &u, limb_t v) {  return u.compare(v) == 0; }
-inline const bool __fastcall operator != (const Int &u, limb_t v) {  return u.compare(v) != 0; }
+    // Auxiliary function for arithmetic operations.
+    // In all cases 'c' should have enough memory space, 'a' and 'b' are normalized.
+    // Return reference to 'c' in all cases except modulo by built-in data types.
 
-inline const bool __fastcall operator < (limb_t u, const Int &v) { return v.compare(u) > 0; }
-inline const bool __fastcall operator > (limb_t u, const Int &v) {  return v.compare(u) < 0; }
-inline const bool __fastcall operator <= (limb_t u, const Int &v) {  return v.compare(u) >= 0; }
-inline const bool __fastcall operator >= (limb_t u, const Int &v) {  return v.compare(u) <= 0; }
-inline const bool __fastcall operator == (limb_t u, const Int &v) {  return v.compare(u) == 0; }
-inline const bool __fastcall operator != (limb_t u, const Int &v) {  return v.compare(u) != 0; }
 
-inline const bool __fastcall operator < (const Int &u, slimb_t v) { return u.compare(v) < 0; }
-inline const bool __fastcall operator > (const Int &u, slimb_t v) {  return u.compare(v) > 0; }
-inline const bool __fastcall operator <= (const Int &u, slimb_t v) {  return u.compare(v) <= 0; }
-inline const bool __fastcall operator >= (const Int &u, slimb_t v) {  return u.compare(v) >= 0; }
-inline const bool __fastcall operator == (const Int &u, slimb_t v) {  return u.compare(v) == 0; }
-inline const bool __fastcall operator != (const Int &u, slimb_t v) {  return u.compare(v) != 0; }
 
-inline const bool __fastcall operator < (slimb_t u, const Int &v) { return v.compare(u) > 0; }
-inline const bool __fastcall operator > (slimb_t u, const Int &v) {  return v.compare(u) < 0; }
-inline const bool __fastcall operator <= (slimb_t u, const Int &v) {  return v.compare(u) >= 0; }
-inline const bool __fastcall operator >= (slimb_t u, const Int &v) {  return v.compare(u) <= 0; }
-inline const bool __fastcall operator == (slimb_t u, const Int &v) {  return v.compare(u) == 0; }
-inline const bool __fastcall operator != (slimb_t u, const Int &v) {  return v.compare(u) != 0; }
+inline Int & __fastcall inc (Int &c, const Int &a, limb_t b) {
+  c.adapt (size_after_add (a, b));
+  ::inc (c.data, a.data, b);
+  return c;
+}
 
+inline Int & __fastcall dec (Int &c, const Int &a, limb_t b) {
+  c.adapt (size_after_sub (a, b));
+  ::dec (c.data, a.data, b);
+  return c;
+}
 
 
-inline const bool __fastcall operator < (const Int &u, const Int &v) { return u.compare(v) < 0; }
-inline const bool __fastcall operator > (const Int &u, const Int &v) {  return u.compare(v) > 0; }
-inline const bool __fastcall operator <= (const Int &u, const Int &v) {  return u.compare(v) <= 0; }
-inline const bool __fastcall operator >= (const Int &u, const Int &v) {  return u.compare(v) >= 0; }
-inline const bool __fastcall operator == (const Int &u, const Int &v) {  return u.compare(v) == 0; }
-inline const bool __fastcall operator != (const Int &u, const Int &v) {  return u.compare(v) != 0; }
 
+Int & __fastcall add (Int &c, const Int &a, const Int &b) { c.adapt (size_after_add (a, b));  ::add (c.data, a.data, b.data);  return c; }
+Int & __fastcall sub (Int &c, const Int &a, const Int &b) { c.adapt (size_after_sub (a, b));  ::sub (c.data, a.data, b.data);  return c; }
+Int & __fastcall mul (Int &c, const Int &a, const Int &b) { c.adapt (size_after_mul (a, b));  ::mul (c.data, a.data, b.data);  return c; }
+Int & __fastcall div_qr (Int *q, Int *r, const Int &a, const Int &b, DivisionMode dm) {
+  if (q)  q->adapt (size_after_div (a, b));
+  if (r)  r->adapt (size_after_mod (a, b));
+  ::div_qr (q?&q->data:(num_t*)nullptr, r?&r->data:(num_t*)nullptr, a.data, b.data, dm);
+  return q ? *q : *r;
+}
+Int & __fastcall div (Int &c, const Int &a, const Int &b, DivisionMode dm) { c.adapt (size_after_div (a, b));  ::div (c.data, a.data, b.data, dm);  return c; }
+Int & __fastcall mod (Int &c, const Int &a, const Int &b, DivisionMode dm) { c.adapt (size_after_mod (a, b));  ::mod (c.data, a.data, b.data, dm);  return c; }
 
+template <typename T>
+inline Int & __fastcall add (Int &c, const Int &a, T b) {
+  c.adapt (size_after_add (a, b));
+  ::add (c.data, a.data, b);
+  return c;
+}
 
-    // Auxiliary function for vectors increment.
-    // 'z' should have enough memory space, 'u' is normalized.
-    // Based on functions from "add.cc".
-    // Return constant reference to 'z'.
-const Int & __fastcall add (Int &z, const Int &u, slimb_t s) { z.adapt (size_after_add (u, s));  ::inc (z.data, u.data, s);  return z; }
-const Int & __fastcall add (Int &z, const Int &u, limb_t s) { z.adapt (size_after_add (u, s));  ::inc (z.data, u.data, s);  return z; }
 
 
+template <typename T>
+inline Int & __fastcall sub (Int &c, const Int &a, T b) {
+  c.adapt (size_after_sub (a, b));
+  ::sub (c.data, a.data, b);
+  return c;
+}
 
-    // Auxiliary function for vectors addition.
-    // 'z' should have enough memory space, 'u' and 'v' are normalized.
-    // Based on functions from "add.cc".
-    // Return constant reference to 'z'.
-const Int & __fastcall add (Int &z, const Int &u, const Int &v) { z.adapt (size_after_add (u, v));  ::add (z.data, u.data, v.data);  return z; }
 
+template <typename T>
+inline Int & __fastcall mul (Int &c, const Int &a, T b) {
+  c.adapt (size_after_mul (a, b));
+  ::mul (c.data, a.data, b);
+  return c;
+}
 
 
-    // Auxiliary function for vectors decrement.
-    // 'u'>='s', 'u' is normalized.
-    // Based on functions from "sub.cc".
-    // Return constant reference to 'z'.
-const Int & __fastcall sub (Int &z, const Int &u, slimb_t s) { z.adapt (size_after_sub (u, s));  ::dec (z.data, u.data, s);  return z; }
-const Int & __fastcall sub (Int &z, const Int &u, limb_t s) { z.adapt (size_after_sub (u, s));  ::dec (z.data, u.data, s);  return z; }
 
+template <typename T>
+inline T __fastcall div_qr (Int *q, const Int &a, T b, DivisionMode dm) {
+  if (q)  q->adapt (size_after_div (a, b));
+  T r = ::div_qr (q?&q->data:(num_t*)nullptr, a.data, b, dm);
+  return r;
+}
 
+template <typename T>
+inline Int & __fastcall div (Int &q, const Int &a, T b, DivisionMode dm=DM_EUCLIDEAN) { div_qr (&q, a, b, dm);  return q; }
 
-    // Auxiliary function for vectors subtraction.
-    // 'u'>='v', 'z' should have enough memory space, 'u' and 'v' are normalized..
-    // Based on functions from "sub.cc".
-    // Return constant reference to 'z'.
-const Int & __fastcall sub (Int &z, const Int &u, const Int &v) { z.adapt (size_after_sub (u, v));  ::sub (z.data, u.data, v.data);  return z; }
+template <typename T>
+inline T __fastcall mod (const Int &a, T b, DivisionMode dm=DM_EUCLIDEAN) { return div_qr (nullptr, a, b, dm); }
 
+Int & __fastcall shift_left (Int &c, const Int &a, bitcnt_t shift) { c.adapt (size_after_shift_left (a, shift));  ::shift_left (c.data, a.data, shift);  return c; }
+Int & __fastcall shift_right (Int &c, const Int &a, bitcnt_t shift)  { c.adapt (size_after_shift_right (a, shift));  ::shift_right (c.data, a.data, shift);  return c; }
 
 
-    // 'z' = 'u'*'v'.
-    // 'z' should have enough memory, 'u' is normalized.
-    // Return constant reference to 'z'.
-const Int & __fastcall mul (Int &z, const Int &u, limb_t v) { z.adapt (size_after_mul (u, v));  ::mul (z.data, u.data, v);  return z; }
-const Int & __fastcall mul (Int &z, const Int &u, slimb_t v) { z.adapt (size_after_mul (u, v));  ::mul (z.data, u.data, v);  return z; }
 
+    // Helpers
 
 
-    // 'z' = 'u'*'v'.
-    // '&z' != '&u', '&z' != '&v', 'z' should have enough memory, 'u' and 'v' are normalized.
-    // Return constant reference to 'z'.
-const Int & __fastcall mul (Int &z, const Int &u, const Int &v) { z.adapt (size_after_mul (u, v));  ::mul (z.data, u.data, v.data);  return z; }
 
+template <typename T> inline Int __fastcall operator + (const Int &a, T b) { Int c (size_after_add (a, b), CI_SIZE);  return add (c, a, b); }
+template <typename T> inline Int __fastcall operator - (const Int &a, T b) { Int c (size_after_sub (a, b), CI_SIZE);  return sub (c, a, b); }
+template <typename T> inline Int __fastcall operator * (const Int &a, T b) { Int c (size_after_mul (a, b), CI_SIZE);  return mul (c, a, b); }
+template <typename T> inline Int __fastcall operator / (const Int &a, T b) { Int c (size_after_div (a, b), CI_SIZE);  return div (c, a, b); }
+template <typename T> inline T __fastcall operator % (const Int &a, T b) { return mod (a, b); }
 
+template <typename T> inline Int __fastcall operator + (T a, const Int &b) { Int c (size_after_add (b, a), CI_SIZE);  return add (c, b, a); }
+template <typename T> inline Int __fastcall operator - (T a, const Int &b) { Int A(a), c (size_after_sub (A, b), CI_SIZE);  return sub (c, A, b); }
+template <typename T> inline Int __fastcall operator * (T a, const Int &b) { Int c (size_after_mul (b, a), CI_SIZE);  return mul (c, b, a); }
+template <typename T> inline Int __fastcall operator / (T a, const Int &b) { Int A(a), c (size_after_div (A, b), CI_SIZE);  return div (c, A, b); }
+template <typename T> inline Int __fastcall operator % (T a, const Int &b) { Int A(a), c (size_after_mod (A, b), CI_SIZE); return mod (c, A, b); }
 
-    // 'z' = 'u'/'v'.
-    // 'u' is normalized.
-    // Return constant reference to 'z'.
-const Int & __fastcall div (Int &z, const Int &u, limb_t v) { z.adapt (size_after_div (u, v));  ::div (z.data, u.data, v);  return z; }
-const Int & __fastcall div (Int &z, const Int &u, slimb_t v) { z.adapt (size_after_div (u, v));  ::div (z.data, u.data, v);  return z; }
+inline Int __fastcall operator + (const Int &a, const Int &b) { Int c (size_after_add (a, b), CI_SIZE);  return add (c, a, b); }
+inline Int __fastcall operator - (const Int &a, const Int &b) { Int c (size_after_sub (a, b), CI_SIZE);  return sub (c, a, b); }
+inline Int __fastcall operator * (const Int &a, const Int &b) { Int c (size_after_mul (a, b), CI_SIZE);  return mul (c, a, b); }
+inline Int __fastcall operator / (const Int &a, const Int &b) { Int c (size_after_div (a, b), CI_SIZE);  return div (c, a, b); }
+inline Int __fastcall operator % (const Int &a, const Int &b) { Int c (size_after_mod (a, b), CI_SIZE);  return mod (c, a, b); }
 
-
-
-    // 'z' = 'u' mod 'v'.
-    // 'u' is normalized.
-    // Return constant reference to 'z'.
-const Int & __fastcall mod (Int &z, const Int &u, slimb_t v, DivisionMode dm=DM_EUCLIDEAN) { z.adapt (size_after_mod (u, v));  ::mod (z.data, u.data, v, dm);  return z; }
-const Int & __fastcall mod (Int &z, const Int &u, limb_t v, DivisionMode dm=DM_EUCLIDEAN) { z.adapt (size_after_mod (u, v));  ::mod (z.data, u.data, v, dm);  return z; }
-
-
-
-    // 'z' = 'u'/'v'.
-    // '&z' != '&u', '&z' != '&v', 'z' should have enough memory, 'u' and 'v' are normalized.
-    // Return constant reference to 'z'.
-const Int & __fastcall div (Int &z, const Int &u, const Int &v) { z.adapt (size_after_div (u, v));  ::div (z.data, u.data, v.data);  return z; }
-
-
-
-    // 'z' = 'u'%'v'.
-    // '&z' != '&u', '&z' != '&v', 'z' should have enough memory, 'u' and 'v' are normalized.
-    // Return constant reference to 'z'.
-const Int & __fastcall mod (Int &z, const Int &u, const Int &v, DivisionMode dm=DM_EUCLIDEAN) { z.adapt (size_after_mod (u, v));  ::mod (z.data, u.data, v.data, dm);  return z; }
-
-
-
-    // 'z' = 'u' << shift.
-    // 'u' is normalized and 'z' should have enough memory.
-    // Return constant reference to 'z'.
-const Int & __fastcall shift_left (Int &z, const Int &u, bitcnt_t shift) { z.adapt (size_after_shift_left (u, shift));  ::shift_left (z.data, u.data, shift);  return z; }
-
-
-
-    // 'z' = 'u' >> shift.
-    // 'u' is normalized and 'z' should have enough memory.
-    // Return constant reference to 'z'.
-const Int & __fastcall shift_right (Int &z, const Int &u, bitcnt_t shift) { z.adapt (size_after_shift_right (u, shift));  ::shift_right (z.data, u.data, shift);  return z; }
-
-
-
-    // Add u + v.
-    // Necessary memory allocated here.
-    // Before call: 'u' and 'v' are normalized.
-    // Return the resulting vector.
-const Int __fastcall operator + (const Int &u, const Int &v) { Int z (size_after_add (u, v));  return add (z, u, v); }
-
-
-
-    // The same function, but 'v' is a slimb.
-const Int __fastcall operator + (const Int &u, limb_t v) { Int z (size_after_add (u, v));  return add (z, u, v); }
-const Int __fastcall operator + (const Int &u, slimb_t v) { Int z (size_after_add (u, v));  return add (z, u, v); }
-
-
-
-
-    // Subtract u - v.
-    // Necessary memory allocated here.
-    // 'u'>='v' and 'u' and 'v' are normalized.
-    // Returns the resulting vector.
-const Int __fastcall operator - (const Int &u, const Int &v) { Int z (size_after_sub (u, v));  return sub (z, u, v); }
-
-
-
-    // The same function, but 'v' is a slimb.
-const Int __fastcall operator - (const Int &u, limb_t v) { Int z (size_after_add (u, v));  return sub (z, u, v); }
-const Int __fastcall operator - (const Int &u, slimb_t v) { Int z (size_after_add (u, v));  return sub (z, u, v); }
-
-
-
-    // Multiply u * v.
-    // Necessary memory allocated here.
-    // 'u' and 'v' are normalized.
-    // Returns the resulting vector.
-const Int __fastcall operator * (const Int &u, const Int &v) { Int z (size_after_mul (u, v));  return mul (z, u, v); }
-
-
-
-    // The same function, but 'v' is a slimb.
-const Int __fastcall operator * (const Int &u, limb_t v) { Int z (size_after_mul (u, v));  return mul (z, u, v); }
-const Int __fastcall operator * (const Int &u, slimb_t v) { Int z (size_after_mul (u, v));  return mul (z, u, v); }
-
-
-
-    // Divide u / v.
-    // Necessary memory allocated here.
-    // 'u' and 'v' are normalized vectors.
-    // Returns the resulting vector.
-const Int __fastcall operator / (const Int &u, const Int &v) { Int z (size_after_div (u, v));  return div (z, u, v); }
-
-
-
-    // The same function, but 'v' is a slimb.
-const Int __fastcall operator / (const Int &u, limb_t v) { Int z (size_after_div (u, v));  return div (z, u, v); }
-const Int __fastcall operator / (const Int &u, slimb_t v) { Int z (size_after_div (u, v));  return div (z, u, v); }
-
-
-const Int __fastcall operator % (const Int &u, slimb_t v) { Int z (size_after_mod (u, v));  return mod (z, u, v, DM_EUCLIDEAN); }
-const Int __fastcall operator % (const Int &u, limb_t v) { Int z (size_after_mod (u, v));  return mod (z, u, v, DM_EUCLIDEAN); }
-const Int __fastcall operator % (const Int &u, const Int &v) { Int z (size_after_mod (u, v));  return mod (z, u, v, DM_EUCLIDEAN); }
-
-
-
-
-    // Return 'u' << shift.
-    // Necessary memory allocated here.
-const Int __fastcall operator << (const Int &u, bitcnt_t shift) { Int z (size_after_shift_left (u, shift));  return shift_left (z, u, shift); }
-
-
-
-    // Return 'u' >> shift.
-    // Necessary memory allocated here.
-const Int __fastcall operator >> (const Int &u, bitcnt_t shift) { Int z (size_after_shift_right (u, shift));  return shift_right (z, u, shift); }
-
-*/
+inline Int __fastcall operator << (const Int &a, bitcnt_t shift) { Int c (size_after_shift_left (a, shift), CI_SIZE);  return shift_left (c, a, shift); }
+inline Int __fastcall operator >> (const Int &a, bitcnt_t shift) { Int c (size_after_shift_right (a, shift), CI_SIZE);  return shift_right (c, a, shift); }
 
 #endif

@@ -160,7 +160,7 @@ vec_t & __fastcall div_qr (vec_t *q, vec_t *r, const vec_t &a, const vec_t &b) {
   else {
     vec_t R(a);
     limb_t *Q;
-    if (q == nullptr)  Q = new limb_t[a.size-b.size+1];	// Here a >= b.
+    if (q == nullptr)  Q = new limb_t[a.size/*-b.size+1*/];	// Here a >= b.
     else  Q = q->limbs;
     size_t size_q = ::div_qr (Q, R.limbs, R.size, b.limbs, b.size);
     if (q == nullptr)  delete[] Q;

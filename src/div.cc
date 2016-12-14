@@ -156,7 +156,7 @@ size_t __fastcall div_qr (limb_t *q, limb_t *a, size_t &size_a, const limb_t *d,
     	//??? shift_right_short (a, a_shifted, size_a-1, shift);
       printf ("Assertion in initial_size_a<size_a in div_qr for n>=3 case\n");
     }
-    else  shift_right_short (a, a_shifted, size_a, shift);
+    else if(size_a>0)  shift_right_short (a, a_shifted, size_a, shift);
     delete[] d;
   } else copy_up (a, a_shifted, size_a);
   delete[] a_shifted;

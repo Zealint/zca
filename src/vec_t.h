@@ -385,7 +385,7 @@ template <typename T> inline size_t size_after_div (const vec_t &a, T b) { retur
 inline size_t size_after_add (const vec_t &a, const vec_t &b) { return max (a.size, b.size) + 1; }
 inline size_t size_after_sub (const vec_t &a, const vec_t &b) { return a.size; }
 inline size_t size_after_mul (const vec_t &a, const vec_t &b) { return a.size + b.size; }
-inline size_t size_after_div (const vec_t &a, const vec_t &b) { return a.size>=b.size ? a.size - b.size + 1 : 1; }
+inline size_t size_after_div (const vec_t &a, const vec_t &b) { return a.size; }//a.size>=b.size ? a.size - b.size + 1 : 1; }
 inline size_t size_after_mod (const vec_t &a, const vec_t &b) { return b.size; }
 inline size_t size_after_shift_left (const vec_t &a, bitcnt_t shift) { return a.size + (shift+LIMB_BITS-1)/LIMB_BITS; }
 inline size_t size_after_shift_right (const vec_t &a, bitcnt_t shift) { return a.size; }
